@@ -14,7 +14,11 @@
   position: relative;
   width: var(--tile-width);
   min-width: var(--tile-width);
-  aspect-ratio: 3 / 4.2;
+  height: calc(var(--tile-width) * 1.4);
+  min-height: calc(var(--tile-width) * 1.4);
+  max-height: calc(var(--tile-width) * 1.4);
+  aspect-ratio: auto;
+  align-self: end;
   padding: 0;
   background: linear-gradient(180deg, #fffdf6, var(--ivory) 60%, var(--ivory-dim));
   border: none;
