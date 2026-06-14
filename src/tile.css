@@ -89,6 +89,12 @@ button.tile:active {
   box-shadow: 0 3px 0 var(--amber), 0 4px 5px rgba(0, 0, 0, .4);
 }
 
+.tile.tiny {
+  --tile-width: 21px;
+  border-radius: 3px;
+  box-shadow: 0 2px 0 var(--amber), 0 3px 4px rgba(0, 0, 0, .35);
+}
+
 .tile.latest-discard {
   animation: discard-pop .2s ease-out;
   box-shadow: 0 3px 0 var(--amber), 0 0 0 2px var(--gold), 0 5px 9px rgba(0, 0, 0, .55);

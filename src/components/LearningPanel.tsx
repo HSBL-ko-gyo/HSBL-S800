@@ -1,12 +1,14 @@
-import { shantenLabel, type DiscardExplanation, type YakuHint } from '../gameEngine'
-import { DiscardExplanationPanel } from './DiscardExplanationPanel'
+import { shantenLabel, type DiscardEvaluation, type Tile, type YakuHint } from '../gameEngine'
+import { DiscardEvaluationPanel } from './DiscardEvaluationPanel'
+import { YakuInfoPanel } from './YakuInfoPanel'
 
 interface LearningPanelProps {
   shanten: number
   improvementTypeCount: number
   improvementTileCount: number
   yakuHints: YakuHint[]
-  explanation: DiscardExplanation | null
+  hand: Tile[]
+  evaluation: DiscardEvaluation | null
   feedback: string | null
   showRiichiButton: boolean
   riichiDeclareMode: boolean
@@ -22,7 +24,8 @@ export function LearningPanel({
   improvementTypeCount,
   improvementTileCount,
   yakuHints,
-  explanation,
+  hand,
+  evaluation,
   feedback,
   showRiichiButton,
   riichiDeclareMode,
@@ -48,7 +51,8 @@ export function LearningPanel({
         </div>
       </section>
 
-      <DiscardExplanationPanel explanation={explanation} />
+      <DiscardEvaluationPanel evaluation={evaluation} />
+      <YakuInfoPanel hints={yakuHints} hand={hand} />
 
       {feedback && <p className="feedback-message" role="status">{feedback}</p>}
 

@@ -104,7 +104,8 @@ export function TableView({
         improvementTypeCount={baselineWaits.length}
         improvementTileCount={baselineWaits.reduce((sum, tile) => sum + tile.remaining, 0)}
         yakuHints={yakuHints}
-        explanation={game.lastExplanation}
+        hand={game.players[0].hand}
+        evaluation={game.lastEvaluation}
         feedback={game.lastFeedback}
         showRiichiButton={humanTurn && !game.playerRiichi}
         riichiDeclareMode={game.riichiDeclareMode}

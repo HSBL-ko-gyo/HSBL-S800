@@ -334,39 +334,149 @@ h1 {
   font-size: 11px;
 }
 
-.explanation-card {
+.evaluation-card {
   min-width: 0;
   padding: 11px 12px;
+  border: 1px solid transparent;
   border-radius: 11px;
   background: rgba(0, 0, 0, .15);
 }
 
-.explanation-card.is-empty {
+.evaluation-card.grade-best { border-color: rgba(232, 200, 121, .55); }
+.evaluation-card.grade-good { border-color: rgba(93, 190, 132, .48); }
+.evaluation-card.grade-compromise { border-color: rgba(226, 159, 67, .45); }
+.evaluation-card.grade-bad { border-color: rgba(214, 99, 83, .55); }
+
+.evaluation-card.is-empty {
   color: rgba(247, 242, 228, .43);
   font-size: 11px;
 }
 
-.explanation-heading {
+.evaluation-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.explanation-heading > div { min-width: 0; }
+.evaluation-heading > div { min-width: 0; }
 
-.explanation-heading strong {
+.evaluation-grade {
   display: block;
   font-family: 'Shippori Mincho B1', serif;
-  font-size: 13px;
+  font-size: 17px;
   line-height: 1.55;
 }
 
-.explanation-card p {
+.grade-best .evaluation-grade { color: var(--gold); }
+.grade-good .evaluation-grade { color: #8ce3aa; }
+.grade-compromise .evaluation-grade { color: #f0b66b; }
+.grade-bad .evaluation-grade { color: #f0a195; }
+
+.evaluation-meta,
+.evaluation-deltas {
+  display: flex;
+  gap: 5px 12px;
+  flex-wrap: wrap;
+  margin-top: 7px;
+  color: rgba(247, 242, 228, .57);
+  font-size: 9.5px;
+}
+
+.evaluation-meta b,
+.evaluation-deltas b { color: rgba(247, 242, 228, .88); }
+
+.evaluation-deltas {
+  padding-top: 6px;
+  border-top: 1px dashed rgba(247, 242, 228, .12);
+}
+
+.evaluation-card p {
   margin-top: 7px;
   color: rgba(247, 242, 228, .7);
   font-size: 11px;
   line-height: 1.65;
+}
+
+.yaku-info-panel {
+  grid-column: 1 / -1;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.yaku-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.yaku-info-card {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid rgba(232, 200, 121, .2);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, .13);
+}
+
+.yaku-info-card h4 {
+  margin-bottom: 4px;
+  color: var(--gold);
+  font-family: 'Shippori Mincho B1', serif;
+  font-size: 13px;
+}
+
+.yaku-info-card p {
+  color: rgba(247, 242, 228, .62);
+  font-size: 9.5px;
+  line-height: 1.55;
+}
+
+.yaku-info-card .yaku-current {
+  margin-top: 4px;
+  color: rgba(247, 242, 228, .86);
+  font-weight: 700;
+}
+
+.yaku-examples {
+  display: grid;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.yaku-example-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.example-label {
+  flex: 0 0 36px;
+  color: rgba(247, 242, 228, .5);
+  font-size: 8px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.example-label.ok { color: #8ce3aa; }
+.example-label.ng { color: #f0a195; }
+
+.example-groups {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.example-group {
+  display: flex;
+  gap: 1px;
+}
+
+.example-groups small {
+  color: rgba(247, 242, 228, .55);
+  font-size: 8px;
 }
 
 .feedback-message {
@@ -585,6 +695,7 @@ footer {
   .learning-metrics,
   .feedback-message,
   .action-buttons { grid-column: 1; }
+  .yaku-info-grid { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 480px) {
@@ -608,10 +719,16 @@ footer {
   .learning-metrics { gap: 5px; }
   .learning-metrics span { flex: 1; padding: 5px 6px; font-size: 9.5px; text-align: center; }
   .yaku-hints,
-  .explanation-card { padding: 9px; }
+  .evaluation-card { padding: 9px; }
   .hint-chip { padding: 3px 7px; font-size: 9.5px; }
-  .explanation-heading strong { font-size: 11px; }
-  .explanation-card p { font-size: 10px; }
+  .evaluation-grade { font-size: 14px; }
+  .evaluation-card p { font-size: 10px; }
+  .evaluation-meta,
+  .evaluation-deltas { font-size: 9px; }
+  .yaku-info-grid { grid-template-columns: 1fr; gap: 6px; }
+  .yaku-info-card { padding: 9px; }
+  .yaku-info-card p { font-size: 9px; }
+  .yaku-examples { margin-top: 5px; }
   .riichi-button,
   .win-button { min-width: 124px; padding: 8px 14px; }
   .round-result { padding: 18px 13px; }

@@ -36,18 +36,31 @@ export interface DiscardOptionAnalysis {
   improvementTileCount: number
   yakuHints: YakuHint[]
   canRiichi: boolean
+  goodShapeCount: number
+  structureScore: number
+  isolatedDiscard: boolean
+  evaluationScore: number
   rank: number
   optionCount: number
   postHand: Tile[]
 }
 
-export interface DiscardExplanation {
+export type DiscardGrade = 'best' | 'good' | 'compromise' | 'bad'
+
+export interface DiscardEvaluation {
   discard: Tile
+  grade: DiscardGrade
+  gradeLabel: string
   shanten: number
+  bestShanten: number
+  shantenDifference: number
   improvementTypeCount: number
   improvementTileCount: number
+  bestImprovementTileCount: number
+  improvementTileDifference: number | null
   rank: number
   optionCount: number
+  bestDiscards: Tile[]
   canRiichi: boolean
   summary: string
   detail: string
@@ -81,7 +94,7 @@ export interface GameState {
   playerRiichi: boolean
   riichiDeclareMode: boolean
   lastFeedback: string | null
-  lastExplanation: DiscardExplanation | null
+  lastEvaluation: DiscardEvaluation | null
   discardLogs: DiscardLog[]
   pendingRonTile: Tile | null
 }
@@ -301,10 +314,44 @@ export function canRiichiAfterDiscard(hand14: Tile[], discardTile: Tile): boolea
 
 function compareOptions(a: DiscardOptionAnalysis, b: DiscardOptionAnalysis): number {
   if (a.shanten !== b.shanten) return a.shanten - b.shanten
-  if (a.improvementTileCount !== b.improvementTileCount) {
-    return b.improvementTileCount - a.improvementTileCount
+  return b.evaluationScore - a.evaluationScore
+}
+
+function countGoodShapes(tiles: Tile[]): number {
+  const counts = toCounts(tiles)
+  let total = 0
+  for (const offset of [0, 9, 18]) {
+    for (let number = 2; number <= 7; number += 1) {
+      if (counts[offset + number - 1] > 0 && counts[offset + number] > 0) total += 1
+    }
   }
-  return b.improvementTypeCount - a.improvementTypeCount
+  return total
+}
+
+function calculateStructureScore(tiles: Tile[]): number {
+  const counts = toCounts(tiles)
+  const pairs = counts.filter((count) => count >= 2).length
+  const triplets = counts.filter((count) => count >= 3).length
+  let sequenceCandidates = 0
+  for (const offset of [0, 9, 18]) {
+    for (let start = 1; start <= 7; start += 1) {
+      if (hasSequenceCandidate(counts, offset, start)) sequenceCandidates += 1
+    }
+  }
+  return pairs * 2 + triplets * 3 + sequenceCandidates
+}
+
+function isIsolatedDiscard(discard: Tile, hand: Tile[]): boolean {
+  const copies = hand.filter((tile) => tile.code === discard.code).length
+  if (copies > 1) return false
+  if (discard.code.length === 1) return true
+  const number = Number(discard.code[0])
+  return !hand.some((tile) =>
+    tile.id !== discard.id
+    && tile.code.length === 2
+    && tile.code[1] === discard.code[1]
+    && Math.abs(Number(tile.code[0]) - number) <= 2,
+  )
 }
 
 export function analyzeDiscardOptions(
@@ -317,50 +364,63 @@ export function analyzeDiscardOptions(
   const raw = [...byCode.values()].map((discard) => {
     const postHand = sortTiles(hand14.filter((tile) => tile.id !== discard.id))
     const improvementTiles = getWaitTiles(postHand, [...visibleTiles, discard])
+    const improvementTypeCount = improvementTiles.length
+    const improvementTileCount = improvementTiles.reduce((sum, tile) => sum + tile.remaining, 0)
+    const yakuHints = getYakuHints(postHand)
+    const goodShapeCount = countGoodShapes(postHand)
+    const structureScore = calculateStructureScore(postHand)
+    const isolatedDiscard = isIsolatedDiscard(discard, hand14)
     return {
       discard,
       shanten: calculateShanten(postHand),
       improvementTiles,
-      improvementTypeCount: improvementTiles.length,
-      improvementTileCount: improvementTiles.reduce((sum, tile) => sum + tile.remaining, 0),
-      yakuHints: getYakuHints(postHand),
+      improvementTypeCount,
+      improvementTileCount,
+      yakuHints,
       canRiichi: isTenpai(postHand),
+      goodShapeCount,
+      structureScore,
+      isolatedDiscard,
+      evaluationScore:
+        improvementTileCount * 10
+        + improvementTypeCount * 4
+        + goodShapeCount * 5
+        + structureScore * 2
+        + yakuHints.length * 3
+        + (isolatedDiscard ? 4 : 0),
       rank: 0,
       optionCount: byCode.size,
       postHand,
     }
   })
 
-  const sorted = [...raw].sort(compareOptions)
   return raw.map((option) => ({
     ...option,
-    rank: sorted.findIndex((candidate) => candidate.discard.code === option.discard.code) + 1,
+    rank: 1 + raw.filter((candidate) => compareOptions(candidate, option) < 0).length,
   }))
 }
 
-function shapeExplanation(selected: DiscardOptionAnalysis, hand14: Tile[]): string {
+function evaluationReason(
+  selected: DiscardOptionAnalysis,
+  hand14: Tile[],
+  shapeLoss: number,
+  structureLoss: number,
+  yakuLoss: number,
+): string {
   const code = selected.discard.code
   const copiesBefore = hand14.filter((tile) => tile.code === code).length
+  if (shapeLoss >= 2 || structureLoss >= 4) {
+    return `${tileName(code)}周辺の連続形を壊すため、かなり損な一打です。`
+  }
   if (code.length === 1) {
     return copiesBefore >= 2
-      ? '字牌の対子候補を手放す選択です。'
-      : '孤立した字牌を処理し、数牌の形を残します。'
+      ? '役牌を含む字牌の対子候補を手放します。'
+      : '孤立した字牌の処理として自然な一打です。'
   }
-
-  const number = Number(code[0])
-  const suit = code[1]
-  const nearby = selected.postHand.filter((tile) =>
-    tile.code.length === 2
-    && tile.code[1] === suit
-    && Math.abs(Number(tile.code[0]) - number) <= 2,
-  ).length
-
-  if ((number === 1 || number === 9) && nearby === 0) {
-    return '孤立した端牌を処理して、中張牌の連続形を残します。'
-  }
-  if (nearby === 0) return '孤立牌を処理し、つながっている牌を優先します。'
-  if (selected.rank === 1) return '受け入れを広く保ち、両面候補を残す打牌です。'
-  return '近い数牌とのつながりを一部手放す選択です。'
+  if (selected.isolatedDiscard) return '孤立牌処理として自然で、つながった形を残します。'
+  if (yakuLoss > 0) return '受け入れは保ちますが、狙える役の候補を一部手放します。'
+  if (selected.rank === 1) return '受け入れと良形を広く残す、素直な一打です。'
+  return '手牌のつながりを保ちながら進める選択です。'
 }
 
 export function shantenLabel(shanten: number): string {
@@ -369,30 +429,75 @@ export function shantenLabel(shanten: number): string {
   return `${shanten}シャンテン`
 }
 
-export function buildDiscardExplanation(
+export function buildDiscardEvaluation(
   selectedDiscard: Tile,
   analysis: DiscardOptionAnalysis[],
   hand14: Tile[],
-): DiscardExplanation {
-  const selected = analysis.find((option) => option.discard.code === selectedDiscard.code)
-  if (!selected) throw new Error('Selected discard was not analyzed')
-
-  const quality = selected.rank === 1
-    ? '候補内で受け入れ最大。'
-    : selected.rank <= Math.ceil(selected.optionCount / 2)
-      ? `候補${selected.optionCount}種中${selected.rank}番手。`
-      : `候補${selected.optionCount}種中${selected.rank}番手で、受け入れはやや狭め。`
+): DiscardEvaluation {
+  const analyzed = analysis.find((option) => option.discard.code === selectedDiscard.code)
+  if (!analyzed || !hand14.some((tile) => tile.id === selectedDiscard.id)) {
+    throw new Error('Selected discard was not analyzed from the current hand')
+  }
+  const selected: DiscardOptionAnalysis = {
+    ...analyzed,
+    discard: selectedDiscard,
+    postHand: sortTiles(hand14.filter((tile) => tile.id !== selectedDiscard.id)),
+  }
+  const bestShanten = Math.min(...analysis.map((option) => option.shanten))
+  const bestShantenOptions = analysis.filter((option) => option.shanten === bestShanten)
+  const bestImprovementTileCount = Math.max(...bestShantenOptions.map((option) => option.improvementTileCount))
+  const bestEvaluationScore = Math.max(...bestShantenOptions.map((option) => option.evaluationScore))
+  const bestOptions = bestShantenOptions.filter((option) => option.evaluationScore === bestEvaluationScore)
+  const bestGoodShapeCount = Math.max(...bestOptions.map((option) => option.goodShapeCount))
+  const bestStructureScore = Math.max(...bestOptions.map((option) => option.structureScore))
+  const bestYakuCount = Math.max(...bestOptions.map((option) => option.yakuHints.length))
+  const shantenDifference = selected.shanten - bestShanten
+  const improvementTileDifference = shantenDifference > 0
+    ? null
+    : Math.max(0, bestImprovementTileCount - selected.improvementTileCount)
+  const shapeLoss = Math.max(0, bestGoodShapeCount - selected.goodShapeCount)
+  const structureLoss = Math.max(0, bestStructureScore - selected.structureScore)
+  const yakuLoss = Math.max(0, bestYakuCount - selected.yakuHints.length)
+  const importantShapeBroken = shapeLoss >= 2 || structureLoss >= 4
+  const grade: DiscardGrade = shantenDifference > 0 || importantShapeBroken
+    ? 'bad'
+    : improvementTileDifference !== null && improvementTileDifference <= 2
+      ? 'best'
+      : improvementTileDifference !== null && improvementTileDifference <= 5
+        ? 'good'
+        : 'compromise'
+  const gradeLabels: Record<DiscardGrade, string> = {
+    best: '◎ 最善級',
+    good: '○ 良い打牌',
+    compromise: '△ 妥協',
+    bad: '× 悪手寄り',
+  }
+  const shantenText = shantenDifference > 0
+    ? `${shantenLabel(bestShanten)}から${shantenLabel(selected.shanten)}へ悪化します。`
+    : `${shantenLabel(selected.shanten)}維持。`
+  const differenceText = shantenDifference > 0
+    ? 'シャンテン数を戻すため、受け入れ比較以前に大きな損です。'
+    : improvementTileDifference === 0
+      ? '受け入れ枚数は最善候補と同じです。'
+      : `受け入れは${selected.improvementTypeCount}種${selected.improvementTileCount}枚で、最善候補との差は${improvementTileDifference}枚です。`
   const reachText = selected.canRiichi ? ' 今の打牌、リーチできたよ。' : ''
-  const summary = `${tileName(selected.discard.code)}切り: ${shantenLabel(selected.shanten)}。受け入れ${selected.improvementTypeCount}種${selected.improvementTileCount}枚。`
-  const detail = `${quality}${shapeExplanation(selected, hand14)}${reachText}`
+  const summary = `${gradeLabels[grade]}：${tileName(selected.discard.code)}切り`
+  const detail = `${shantenText}${differenceText}${evaluationReason(selected, hand14, shapeLoss, structureLoss, yakuLoss)}${reachText}`
 
   return {
-    discard: selected.discard,
+    discard: selectedDiscard,
+    grade,
+    gradeLabel: gradeLabels[grade],
     shanten: selected.shanten,
+    bestShanten,
+    shantenDifference,
     improvementTypeCount: selected.improvementTypeCount,
     improvementTileCount: selected.improvementTileCount,
+    bestImprovementTileCount,
+    improvementTileDifference,
     rank: selected.rank,
     optionCount: selected.optionCount,
+    bestDiscards: bestOptions.map((option) => option.discard),
     canRiichi: selected.canRiichi,
     summary,
     detail,
@@ -427,7 +532,7 @@ export function createInitialGame(random: () => number = Math.random): GameState
     playerRiichi: false,
     riichiDeclareMode: false,
     lastFeedback: null,
-    lastExplanation: null,
+    lastEvaluation: null,
     discardLogs: [],
     pendingRonTile: null,
   }
@@ -506,7 +611,7 @@ function appendHumanLog(
   stateBefore: GameState,
   stateAfter: GameState,
   selected: DiscardOptionAnalysis,
-  explanation: DiscardExplanation,
+  evaluation: DiscardEvaluation,
   declaredRiichi: boolean,
 ): GameState {
   const handBefore = stateBefore.players[0].hand
@@ -523,12 +628,12 @@ function appendHumanLog(
     yakuHints: selected.yakuHints,
     wasRiichiPossible: selected.canRiichi,
     declaredRiichi,
-    explanation: `${explanation.summary} ${explanation.detail}`,
+    explanation: `${evaluation.summary} ${evaluation.detail}`,
   }
   return {
     ...stateAfter,
     discardLogs: [...stateBefore.discardLogs, log],
-    lastExplanation: explanation,
+    lastEvaluation: evaluation,
   }
 }
 
@@ -555,9 +660,9 @@ export function discardHumanTile(state: GameState, tileId: string): GameState {
   }
 
   const declaredRiichi = state.riichiDeclareMode && selected.canRiichi
-  const explanation = buildDiscardExplanation(discarded, analysis, hand14)
+  const evaluation = buildDiscardEvaluation(discarded, analysis, hand14)
   const discardedState = applyDiscard(state, tileId)
-  const withLog = appendHumanLog(state, discardedState, selected, explanation, declaredRiichi)
+  const withLog = appendHumanLog(state, discardedState, { ...selected, discard: discarded }, evaluation, declaredRiichi)
   return {
     ...withLog,
     playerRiichi: state.playerRiichi || declaredRiichi,
@@ -584,8 +689,8 @@ export function autoDiscardRiichiDraw(state: GameState): GameState {
   const discarded = hand14.find((tile) => tile.id === state.drawnTileId)!
   const analysis = analyzeDiscardOptions(hand14, getVisibleTiles(state))
   const selected = analysis.find((option) => option.discard.code === discarded.code)!
-  const explanation = buildDiscardExplanation(discarded, analysis, hand14)
-  return appendHumanLog(state, applyDiscard(state, discarded.id), selected, explanation, false)
+  const evaluation = buildDiscardEvaluation(discarded, analysis, hand14)
+  return appendHumanLog(state, applyDiscard(state, discarded.id), { ...selected, discard: discarded }, evaluation, false)
 }
 
 export function canDeclareTsumo(state: GameState): boolean {

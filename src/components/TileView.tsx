@@ -11,6 +11,7 @@ export type TileVisualState = 'picked-right' | 'picked-wrong' | 'dim' | 'static'
 interface TileViewProps {
   tile: Tile
   mini?: boolean
+  tiny?: boolean
   visualState?: TileVisualState
   className?: string
   disabled?: boolean
@@ -40,6 +41,7 @@ function tileContent(code: TileCode) {
 export function TileView({
   tile,
   mini = false,
+  tiny = false,
   visualState,
   className = '',
   disabled = false,
@@ -49,7 +51,7 @@ export function TileView({
     ? tile.code[1] === 'm' ? 'man' : tile.code[1] === 'p' ? 'pin' : 'sou'
     : ''
   const isInteractive = Boolean(onClick) && !disabled
-  const classes = ['tile', suitClass, mini ? 'mini' : '', visualState ?? '', className]
+  const classes = ['tile', suitClass, mini ? 'mini' : '', tiny ? 'tiny' : '', visualState ?? '', className]
     .filter(Boolean)
     .join(' ')
   const label = `${tileName(tile.code)}を切る`
