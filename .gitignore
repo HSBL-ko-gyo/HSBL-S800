@@ -1,0 +1,8 @@
+node_modules
+dist
+*.local
+.vite
+.wrangler
+*.tsbuildinfo
+vite.*.log
+wrangler.*.log
