@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { TableView } from './components/TableView'
+import { TileView } from './components/TileView'
 import { YakuInfoPanel } from './components/YakuInfoPanel'
 import {
   analyzeDiscardOptions,
@@ -14,6 +15,7 @@ import {
   discardHumanTile,
   discardTile,
   getYakuHints,
+  getRiichiWaitTiles,
   isTenpai,
   setRiichiDeclareMode,
   type GameState,
@@ -58,6 +60,11 @@ describe('riichi learning flow', () => {
     expect(result.playerRiichi).toBe(true)
     expect(result.players[0].river).toHaveLength(1)
     expect(result.discardLogs[0].declaredRiichi).toBe(true)
+    expect(result.discardLogs[0].riichiEstablished).toBe(true)
+    expect(result.lastFeedback).toBe('リーチ成立！')
+    expect(result.lastEvaluation?.detail).not.toContain('リーチできたよ')
+    expect(result.lastEvaluation?.missedRiichiOpportunity).toBe(false)
+    expect(getRiichiWaitTiles(result)).toEqual([{ code: '5m', remaining: 3 }])
   })
 
   it('does not discard and exits declaration mode when the tile is invalid', () => {
@@ -82,6 +89,9 @@ describe('riichi learning flow', () => {
     const result = autoDiscardRiichiDraw(state)
     expect(result.players[0].river.at(-1)?.id).toBe(drawn.id)
     expect(result.currentPlayer).toBe(1)
+    expect(result.discardLogs.at(-1)?.wasRiichiPossible).toBe(false)
+    expect(result.lastEvaluation?.missedRiichiOpportunity).toBe(false)
+    expect(result.lastEvaluation?.detail).not.toContain('リーチできたよ')
   })
 
   it('stops for tsumo or ron only when a winning tile is available', () => {
@@ -112,6 +122,9 @@ describe('riichi learning flow', () => {
     expect(result.playerRiichi).toBe(false)
     expect(result.lastFeedback).toBe('今の打牌、リーチできたよ')
     expect(result.discardLogs[0].wasRiichiPossible).toBe(true)
+    expect(result.discardLogs[0].declaredRiichi).toBe(false)
+    expect(result.discardLogs[0].riichiEstablished).toBe(false)
+    expect(result.lastEvaluation?.missedRiichiOpportunity).toBe(true)
   })
 
   it('does not expose riichi-capable tiles before discard in the UI', () => {
@@ -130,7 +143,28 @@ describe('riichi learning flow', () => {
     expect(html).not.toContain('リーチ可能')
     expect(html).not.toContain('riichi-available')
     expect(html).not.toContain('最善候補')
+    expect(html).not.toContain('待ち牌答え合わせ')
     expect(html).toContain('リーチ宣言')
+  })
+
+  it('shows waits after riichi without showing a duplicated missed-riichi message', () => {
+    const declaring = setRiichiDeclareMode(gameWithHand([...tenpaiBase, 'E']), true)
+    const established = discardHumanTile(declaring, declaring.players[0].hand[13].id)
+    const html = renderToStaticMarkup(
+      <TableView
+        game={established}
+        onDiscard={() => undefined}
+        onRiichiMode={() => undefined}
+        onTsumo={() => undefined}
+        onRon={() => undefined}
+        onRestart={() => undefined}
+      />,
+    )
+    expect(html).toContain('待ち牌答え合わせ')
+    expect(html).toContain('残り')
+    expect(html).toContain('リーチ宣言')
+    expect(html).not.toContain('リーチ可能だった')
+    expect(html).not.toContain('今の打牌、リーチできたよ')
   })
 })
 
@@ -244,5 +278,18 @@ describe('yaku memo cards', () => {
     const html = renderToStaticMarkup(<YakuInfoPanel hints={hints} hand={hand} />)
     expect(html).toContain('役牌候補')
     expect(html).not.toContain('リーチ')
+  })
+})
+
+describe('tile usage classes', () => {
+  it('assigns explicit hand, river, and tiny classes without mixing variants', () => {
+    const tile = createTile('5m', 'usage')
+    const handHtml = renderToStaticMarkup(<TileView tile={tile} usage="hand" onClick={() => undefined} />)
+    const riverHtml = renderToStaticMarkup(<TileView tile={tile} usage="river" />)
+    const tinyHtml = renderToStaticMarkup(<TileView tile={tile} usage="tiny" />)
+    expect(handHtml).toContain('tile man hand')
+    expect(riverHtml).toContain('tile man river')
+    expect(riverHtml).not.toContain(' mini')
+    expect(tinyHtml).toContain('tile man tiny')
   })
 })

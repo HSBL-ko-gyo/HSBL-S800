@@ -25,7 +25,7 @@ export function YakuInfoCard({ hint, hand }: YakuInfoCardProps) {
                     <TileView
                       key={`${code}-${tileIndex}`}
                       tile={createTile(code, `yaku-${hint}-${rowIndex}-${groupIndex}-${tileIndex}`)}
-                      tiny
+                      usage="tiny"
                     />
                   ))}
                 </div>

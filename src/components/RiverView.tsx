@@ -21,7 +21,7 @@ export function RiverView({ player, seat, active, lastDiscardId }: RiverViewProp
           <TileView
             key={tile.id}
             tile={tile}
-            mini
+            usage="river"
             className={tile.id === lastDiscardId ? 'latest-discard' : ''}
           />
         ))}

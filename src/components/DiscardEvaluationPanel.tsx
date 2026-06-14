@@ -24,7 +24,7 @@ export function DiscardEvaluationPanel({ evaluation }: DiscardEvaluationPanelPro
           <span className="learning-label">打牌評価</span>
           <strong className="evaluation-grade">{evaluation.summary}</strong>
         </div>
-        <TileView tile={evaluation.discard} mini />
+        <TileView tile={evaluation.discard} usage="mini" />
       </div>
       <div className="evaluation-meta">
         <span>候補内 <b>{evaluation.rank}位 / {evaluation.optionCount}候補</b></span>
@@ -35,6 +35,10 @@ export function DiscardEvaluationPanel({ evaluation }: DiscardEvaluationPanelPro
         <span>受け入れ差: <b>{evaluation.improvementTileDifference === null ? '比較対象外' : `${evaluation.improvementTileDifference}枚`}</b></span>
         <span>結果: <b>{shantenLabel(evaluation.shanten)} / {evaluation.improvementTypeCount}種{evaluation.improvementTileCount}枚</b></span>
       </div>
+      {evaluation.riichiEstablished && <p className="evaluation-riichi declared">リーチ宣言</p>}
+      {!evaluation.riichiEstablished && evaluation.missedRiichiOpportunity && (
+        <p className="evaluation-riichi missed">リーチ可能だった</p>
+      )}
       <p>{evaluation.detail}</p>
     </section>
   )

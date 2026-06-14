@@ -157,7 +157,7 @@ h1 {
 
 .river {
   display: grid;
-  grid-template-columns: repeat(6, 30px);
+  grid-template-columns: repeat(6, 27px);
   align-content: start;
   gap: 5px 4px;
   min-height: 105px;
@@ -248,10 +248,6 @@ h1 {
   justify-content: center;
   gap: clamp(2px, .35vw, 5px);
   padding: 8px 5px 12px;
-}
-
-.hand .tile {
-  --tile-width: clamp(24px, 5.2vw, 54px);
 }
 
 .hand .tile.drawn {
@@ -396,6 +392,50 @@ h1 {
   color: rgba(247, 242, 228, .7);
   font-size: 11px;
   line-height: 1.65;
+}
+
+.evaluation-riichi {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.evaluation-riichi.declared {
+  background: rgba(232, 200, 121, .15);
+  color: var(--gold);
+}
+
+.evaluation-riichi.missed {
+  background: rgba(247, 242, 228, .09);
+  color: rgba(247, 242, 228, .76);
+}
+
+.riichi-wait-panel {
+  grid-column: 1 / -1;
+  padding: 10px 11px;
+  border: 1px solid rgba(232, 200, 121, .35);
+  border-radius: 11px;
+  background: rgba(232, 200, 121, .07);
+}
+
+.riichi-wait-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.riichi-wait-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(247, 242, 228, .7);
+  font-size: 10px;
+}
+
+.riichi-wait-item b {
+  color: var(--gold);
+  font-size: 12px;
 }
 
 .yaku-info-panel {
@@ -689,7 +729,7 @@ footer {
 
   .river-panel { padding: 8px; }
   .river { grid-template-columns: repeat(6, 24px); gap: 4px 3px; min-height: 88px; }
-  .river .tile { --tile-width: 24px; }
+  .tile.river { --tile-width: 24px; }
   .table-center { width: 140px; margin: 6px 0; }
   .learning-panel { grid-template-columns: 1fr; }
   .learning-metrics,
@@ -706,15 +746,15 @@ footer {
   .table-board { gap: 7px; }
   .player-label { gap: 5px; margin-bottom: 7px; }
   .hand-count { display: none; }
-  .river { grid-template-columns: repeat(6, 21px); min-height: 76px; }
-  .river .tile { --tile-width: 21px; }
+  .river { grid-template-columns: repeat(6, 23px); min-height: 80px; }
+  .tile.hand,
+  .tile.river { --tile-width: 23px; }
   .table-center { width: 124px; border-radius: 15px; }
   .table-center strong { font-size: 14px; }
   .wall-counter b { font-size: 25px; }
   .hand-zone { margin-top: 12px; }
-  .hand { min-height: 60px; padding-inline: 2px; }
-  .hand .tile { --tile-width: clamp(22px, 5.2vw, 54px); }
-  .hand .tile.drawn { margin-left: 4px; }
+  .hand { min-height: 62px; gap: 2px; padding-inline: 1px; }
+  .hand .tile.drawn { margin-left: 3px; }
   .learning-panel { gap: 8px; margin-top: 8px; padding: 9px; border-radius: 13px; }
   .learning-metrics { gap: 5px; }
   .learning-metrics span { flex: 1; padding: 5px 6px; font-size: 9.5px; text-align: center; }

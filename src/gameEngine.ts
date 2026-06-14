@@ -62,6 +62,9 @@ export interface DiscardEvaluation {
   optionCount: number
   bestDiscards: Tile[]
   canRiichi: boolean
+  declaredRiichi: boolean
+  riichiEstablished: boolean
+  missedRiichiOpportunity: boolean
   summary: string
   detail: string
 }
@@ -78,6 +81,7 @@ export interface DiscardLog {
   yakuHints: YakuHint[]
   wasRiichiPossible: boolean
   declaredRiichi: boolean
+  riichiEstablished: boolean
   explanation: string
 }
 
@@ -92,6 +96,7 @@ export interface GameState {
   turnNumber: number
   lastDiscard: { playerIndex: number; tileId: string } | null
   playerRiichi: boolean
+  riichiWaitTiles: TileCode[]
   riichiDeclareMode: boolean
   lastFeedback: string | null
   lastEvaluation: DiscardEvaluation | null
@@ -433,6 +438,7 @@ export function buildDiscardEvaluation(
   selectedDiscard: Tile,
   analysis: DiscardOptionAnalysis[],
   hand14: Tile[],
+  options: { declaredRiichi?: boolean; playerAlreadyRiichi?: boolean } = {},
 ): DiscardEvaluation {
   const analyzed = analysis.find((option) => option.discard.code === selectedDiscard.code)
   if (!analyzed || !hand14.some((tile) => tile.id === selectedDiscard.id)) {
@@ -480,7 +486,10 @@ export function buildDiscardEvaluation(
     : improvementTileDifference === 0
       ? '受け入れ枚数は最善候補と同じです。'
       : `受け入れは${selected.improvementTypeCount}種${selected.improvementTileCount}枚で、最善候補との差は${improvementTileDifference}枚です。`
-  const reachText = selected.canRiichi ? ' 今の打牌、リーチできたよ。' : ''
+  const declaredRiichi = options.declaredRiichi ?? false
+  const riichiEstablished = declaredRiichi && selected.canRiichi
+  const showMissedRiichi = selected.canRiichi && !declaredRiichi && !options.playerAlreadyRiichi
+  const reachText = showMissedRiichi ? ' 今の打牌、リーチできたよ。' : ''
   const summary = `${gradeLabels[grade]}：${tileName(selected.discard.code)}切り`
   const detail = `${shantenText}${differenceText}${evaluationReason(selected, hand14, shapeLoss, structureLoss, yakuLoss)}${reachText}`
 
@@ -499,6 +508,9 @@ export function buildDiscardEvaluation(
     optionCount: selected.optionCount,
     bestDiscards: bestOptions.map((option) => option.discard),
     canRiichi: selected.canRiichi,
+    declaredRiichi,
+    riichiEstablished,
+    missedRiichiOpportunity: showMissedRiichi,
     summary,
     detail,
   }
@@ -530,6 +542,7 @@ export function createInitialGame(random: () => number = Math.random): GameState
     turnNumber: 0,
     lastDiscard: null,
     playerRiichi: false,
+    riichiWaitTiles: [],
     riichiDeclareMode: false,
     lastFeedback: null,
     lastEvaluation: null,
@@ -626,8 +639,9 @@ function appendHumanLog(
     improvementTypeCount: selected.improvementTypeCount,
     improvementTileCount: selected.improvementTileCount,
     yakuHints: selected.yakuHints,
-    wasRiichiPossible: selected.canRiichi,
+    wasRiichiPossible: selected.canRiichi && !stateBefore.playerRiichi,
     declaredRiichi,
+    riichiEstablished: declaredRiichi && selected.canRiichi,
     explanation: `${evaluation.summary} ${evaluation.detail}`,
   }
   return {
@@ -660,12 +674,16 @@ export function discardHumanTile(state: GameState, tileId: string): GameState {
   }
 
   const declaredRiichi = state.riichiDeclareMode && selected.canRiichi
-  const evaluation = buildDiscardEvaluation(discarded, analysis, hand14)
+  const evaluation = buildDiscardEvaluation(discarded, analysis, hand14, { declaredRiichi })
+  const riichiWaitTiles = declaredRiichi
+    ? selected.improvementTiles.map((tile) => tile.code)
+    : state.riichiWaitTiles
   const discardedState = applyDiscard(state, tileId)
   const withLog = appendHumanLog(state, discardedState, { ...selected, discard: discarded }, evaluation, declaredRiichi)
   return {
     ...withLog,
     playerRiichi: state.playerRiichi || declaredRiichi,
+    riichiWaitTiles,
     riichiDeclareMode: false,
     lastFeedback: declaredRiichi
       ? 'リーチ成立！'
@@ -689,8 +707,20 @@ export function autoDiscardRiichiDraw(state: GameState): GameState {
   const discarded = hand14.find((tile) => tile.id === state.drawnTileId)!
   const analysis = analyzeDiscardOptions(hand14, getVisibleTiles(state))
   const selected = analysis.find((option) => option.discard.code === discarded.code)!
-  const evaluation = buildDiscardEvaluation(discarded, analysis, hand14)
+  const evaluation = buildDiscardEvaluation(discarded, analysis, hand14, { playerAlreadyRiichi: true })
   return appendHumanLog(state, applyDiscard(state, discarded.id), { ...selected, discard: discarded }, evaluation, false)
+}
+
+export function getRiichiWaitTiles(state: GameState): ImprovementTile[] {
+  if (!state.playerRiichi || state.riichiWaitTiles.length === 0) return []
+  const visibleCounts = toCounts([
+    ...state.players[0].hand,
+    ...state.players.flatMap((player) => player.river),
+  ])
+  return state.riichiWaitTiles.map((code) => ({
+    code,
+    remaining: Math.max(0, 4 - visibleCounts[CODE_ORDER.get(code) ?? 0]),
+  }))
 }
 
 export function canDeclareTsumo(state: GameState): boolean {

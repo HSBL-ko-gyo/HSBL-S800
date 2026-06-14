@@ -83,6 +83,14 @@ button.tile:active {
 .tile.picked-wrong { box-shadow: 0 5px 0 var(--chun), 0 0 0 3px var(--chun), 0 8px 10px rgba(0, 0, 0, .45); }
 .tile.dim { opacity: .45; }
 
+.tile.hand {
+  --tile-width: clamp(30px, 5.4vw, 56px);
+}
+
+.tile.river {
+  --tile-width: 27px;
+}
+
 .tile.mini {
   --tile-width: 30px;
   border-radius: 4px;
@@ -103,4 +111,13 @@ button.tile:active {
 @keyframes discard-pop {
   from { transform: translateY(-8px) scale(1.08); opacity: .4; }
   to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+@media (max-width: 780px) {
+  .tile.river { --tile-width: 24px; }
+}
+
+@media (max-width: 480px) {
+  .tile.hand,
+  .tile.river { --tile-width: 23px; }
 }

@@ -2,6 +2,7 @@ import {
   calculateShanten,
   canDeclareTsumo,
   getVisibleTiles,
+  getRiichiWaitTiles,
   getWaitTiles,
   getYakuHints,
   type GameState,
@@ -43,6 +44,7 @@ export function TableView({
     [...getVisibleTiles(game), ...(drawnTile ? [drawnTile] : [])],
   )
   const yakuHints = getYakuHints(game.players[0].hand)
+  const riichiWaits = getRiichiWaitTiles(game)
   const statusText = game.status === 'draw'
     ? '流局'
     : game.status === 'win'
@@ -106,6 +108,7 @@ export function TableView({
         yakuHints={yakuHints}
         hand={game.players[0].hand}
         evaluation={game.lastEvaluation}
+        riichiWaits={riichiWaits}
         feedback={game.lastFeedback}
         showRiichiButton={humanTurn && !game.playerRiichi}
         riichiDeclareMode={game.riichiDeclareMode}

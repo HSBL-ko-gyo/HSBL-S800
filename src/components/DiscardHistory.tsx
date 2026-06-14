@@ -22,8 +22,10 @@ export function DiscardHistory({ logs }: DiscardHistoryProps) {
                 <p>ツモ: {log.drawnTile ? tileName(log.drawnTile) : 'なし'} / 手牌: {log.hand.map(tileName).join(' ')}</p>
                 {log.yakuHints.length > 0 && <p>役候補: {log.yakuHints.join('・')}</p>}
                 <p>{log.explanation}</p>
-                {log.declaredRiichi && <span className="history-flag">リーチ宣言</span>}
-                {!log.declaredRiichi && log.wasRiichiPossible && <span className="history-flag missed">リーチ可能だった</span>}
+                {(log.declaredRiichi || log.riichiEstablished) && <span className="history-flag">リーチ宣言</span>}
+                {!log.declaredRiichi && !log.riichiEstablished && log.wasRiichiPossible && (
+                  <span className="history-flag missed">リーチ可能だった</span>
+                )}
               </li>
             ))}
           </ol>

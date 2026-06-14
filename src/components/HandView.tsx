@@ -22,6 +22,7 @@ export function HandView({ tiles, drawnTileId, canDiscard, hint, onDiscard }: Ha
           <TileView
             key={tile.id}
             tile={tile}
+            usage="hand"
             className={tile.id === drawnTileId ? 'drawn' : ''}
             visualState={canDiscard ? undefined : 'static'}
             disabled={!canDiscard}
