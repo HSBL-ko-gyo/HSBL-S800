@@ -725,6 +725,28 @@ footer {
   to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 
+@media (min-width: 781px) {
+  .learning-panel { padding: 17px; }
+  .learning-metrics span { font-size: 12px; }
+  .learning-label { font-size: 11px; }
+  .hint-chip,
+  .hint-empty { font-size: 12px; }
+  .evaluation-card { padding: 14px 15px; }
+  .evaluation-card.is-empty { font-size: 13px; }
+  .evaluation-grade { font-size: 20px; }
+  .evaluation-meta,
+  .evaluation-deltas { font-size: 11px; }
+  .evaluation-card p { font-size: 13px; line-height: 1.7; }
+  .riichi-wait-item { font-size: 12px; }
+  .riichi-wait-item b { font-size: 13px; }
+  .yaku-info-card { padding: 13px; }
+  .yaku-info-card h4 { font-size: 15px; }
+  .yaku-info-card p { font-size: 12px; line-height: 1.65; }
+  .example-label,
+  .example-groups small { font-size: 10px; }
+  .feedback-message { font-size: 13px; }
+}
+
 @media (max-width: 780px) {
   .table-board {
     grid-template-columns: 1fr 1fr;
