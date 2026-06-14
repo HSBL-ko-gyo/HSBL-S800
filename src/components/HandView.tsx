@@ -6,10 +6,11 @@ interface HandViewProps {
   tiles: Tile[]
   drawnTileId: string | null
   canDiscard: boolean
+  hint: string
   onDiscard: (tile: Tile) => void
 }
 
-export function HandView({ tiles, drawnTileId, canDiscard, onDiscard }: HandViewProps) {
+export function HandView({ tiles, drawnTileId, canDiscard, hint, onDiscard }: HandViewProps) {
   const drawnTile = tiles.find((tile) => tile.id === drawnTileId)
   const concealed = sortTiles(tiles.filter((tile) => tile.id !== drawnTileId))
   const displayed = drawnTile ? [...concealed, drawnTile] : concealed
@@ -28,9 +29,7 @@ export function HandView({ tiles, drawnTileId, canDiscard, onDiscard }: HandView
           />
         ))}
       </div>
-      <p className="hand-hint">
-        {canDiscard ? '切る牌を選んでください' : '敵の打牌中…'}
-      </p>
+      <p className="hand-hint">{hint}</p>
     </section>
   )
 }

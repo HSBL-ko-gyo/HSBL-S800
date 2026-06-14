@@ -203,6 +203,18 @@ h1 {
   font-size: 16px;
 }
 
+.riichi-status {
+  margin-bottom: 4px;
+  padding: 2px 9px;
+  border: 1px solid rgba(232, 200, 121, .55);
+  border-radius: 999px;
+  color: var(--gold);
+  font-family: 'Shippori Mincho B1', serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .14em;
+}
+
 .wall-counter {
   display: flex;
   align-items: baseline;
@@ -253,6 +265,244 @@ h1 {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: .08em;
+}
+
+.learning-panel {
+  display: grid;
+  grid-template-columns: minmax(230px, .75fr) minmax(340px, 1.25fr);
+  gap: 12px;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid rgba(232, 200, 121, .3);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .045), rgba(0, 0, 0, .13)), rgba(15, 70, 50, .88);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .24);
+}
+
+.learning-metrics {
+  display: flex;
+  grid-column: 1 / -1;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.learning-metrics span {
+  padding: 6px 10px;
+  border: 1px solid rgba(247, 242, 228, .13);
+  border-radius: 7px;
+  background: rgba(0, 0, 0, .15);
+  color: rgba(247, 242, 228, .7);
+  font-size: 11px;
+}
+
+.learning-metrics b { color: var(--ivory); }
+
+.learning-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--gold);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .17em;
+}
+
+.yaku-hints {
+  min-width: 0;
+  padding: 11px;
+  border-radius: 11px;
+  background: rgba(0, 0, 0, .12);
+}
+
+.hint-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.hint-chip {
+  padding: 4px 9px;
+  border: 1px solid rgba(232, 200, 121, .28);
+  border-radius: 999px;
+  background: rgba(232, 200, 121, .1);
+  color: #f0db9f;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.hint-empty {
+  color: rgba(247, 242, 228, .4);
+  font-size: 11px;
+}
+
+.explanation-card {
+  min-width: 0;
+  padding: 11px 12px;
+  border-radius: 11px;
+  background: rgba(0, 0, 0, .15);
+}
+
+.explanation-card.is-empty {
+  color: rgba(247, 242, 228, .43);
+  font-size: 11px;
+}
+
+.explanation-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.explanation-heading > div { min-width: 0; }
+
+.explanation-heading strong {
+  display: block;
+  font-family: 'Shippori Mincho B1', serif;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.explanation-card p {
+  margin-top: 7px;
+  color: rgba(247, 242, 228, .7);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.feedback-message {
+  grid-column: 1 / -1;
+  padding: 7px 10px;
+  border: 1px solid rgba(232, 200, 121, .4);
+  border-radius: 8px;
+  background: rgba(232, 200, 121, .09);
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.action-buttons {
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: center;
+  gap: 9px;
+}
+
+.action-buttons:empty { display: none; }
+
+.riichi-button,
+.win-button,
+.restart-button {
+  min-width: 136px;
+  padding: 9px 18px;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  color: var(--ink);
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .3);
+}
+
+.riichi-button { background: linear-gradient(180deg, #f3db9c, var(--gold)); }
+
+.riichi-button.is-active {
+  background: linear-gradient(180deg, #f5b4a9, #d66353);
+  box-shadow: 0 0 0 2px rgba(255, 229, 222, .55), 0 4px 12px rgba(0, 0, 0, .3);
+}
+
+.win-button {
+  background: linear-gradient(180deg, #fffdf6, var(--ivory-dim));
+  font-family: 'Shippori Mincho B1', serif;
+  font-size: 17px;
+}
+
+.round-result {
+  position: fixed;
+  z-index: 10;
+  top: 50%;
+  left: 50%;
+  width: min(720px, calc(100% - 28px));
+  max-height: min(86vh, 760px);
+  padding: 24px;
+  overflow-y: auto;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(232, 200, 121, .65);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(0, 0, 0, .14)), #104b36;
+  box-shadow: 0 20px 70px rgba(0, 0, 0, .75);
+  text-align: center;
+  animation: result-in .2s ease-out;
+}
+
+.round-result h2 {
+  margin: 2px 0;
+  font-family: 'Shippori Mincho B1', serif;
+  font-size: 38px;
+}
+
+.round-result > p {
+  color: rgba(247, 242, 228, .7);
+  font-size: 12px;
+}
+
+.discard-history {
+  margin-top: 16px;
+  text-align: left;
+}
+
+.discard-history h3 {
+  margin-bottom: 8px;
+  color: var(--gold);
+  font-family: 'Shippori Mincho B1', serif;
+  font-size: 15px;
+}
+
+.discard-history ol {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+}
+
+.discard-history li {
+  padding: 10px 11px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, .16);
+  color: rgba(247, 242, 228, .66);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.history-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--ivory);
+  font-size: 12px;
+}
+
+.history-flag {
+  display: inline-block;
+  margin-top: 5px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(232, 200, 121, .16);
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.history-flag.missed {
+  background: rgba(247, 242, 228, .1);
+  color: rgba(247, 242, 228, .72);
+}
+
+.history-empty {
+  color: rgba(247, 242, 228, .45);
+  font-size: 11px;
+}
+
+.round-result .restart-button {
+  margin-top: 17px;
+  background: var(--gold);
 }
 
 .draw-result {
@@ -331,6 +581,10 @@ footer {
   .river { grid-template-columns: repeat(6, 24px); gap: 4px 3px; min-height: 88px; }
   .river .tile { --tile-width: 24px; }
   .table-center { width: 140px; margin: 6px 0; }
+  .learning-panel { grid-template-columns: 1fr; }
+  .learning-metrics,
+  .feedback-message,
+  .action-buttons { grid-column: 1; }
 }
 
 @media (max-width: 480px) {
@@ -347,5 +601,19 @@ footer {
   .table-center strong { font-size: 14px; }
   .wall-counter b { font-size: 25px; }
   .hand-zone { margin-top: 12px; }
-  .hand { min-height: 60px; }
+  .hand { min-height: 60px; padding-inline: 2px; }
+  .hand .tile { --tile-width: clamp(22px, 5.2vw, 54px); }
+  .hand .tile.drawn { margin-left: 4px; }
+  .learning-panel { gap: 8px; margin-top: 8px; padding: 9px; border-radius: 13px; }
+  .learning-metrics { gap: 5px; }
+  .learning-metrics span { flex: 1; padding: 5px 6px; font-size: 9.5px; text-align: center; }
+  .yaku-hints,
+  .explanation-card { padding: 9px; }
+  .hint-chip { padding: 3px 7px; font-size: 9.5px; }
+  .explanation-heading strong { font-size: 11px; }
+  .explanation-card p { font-size: 10px; }
+  .riichi-button,
+  .win-button { min-width: 124px; padding: 8px 14px; }
+  .round-result { padding: 18px 13px; }
+  .history-title { font-size: 11px; }
 }

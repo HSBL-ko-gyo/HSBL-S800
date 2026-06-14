@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react'
 import { TableView } from './components/TableView'
 import {
+  autoDiscardRiichiDraw,
   beginTurn,
+  canDeclareTsumo,
   createInitialGame,
-  discardTile,
+  declareWin,
+  discardHumanTile,
   playAutomaticTurn,
+  setRiichiDeclareMode,
   type GameState,
   type Tile,
 } from './gameEngine'
@@ -17,10 +21,17 @@ export default function App() {
   const [game, setGame] = useState<GameState>(newGame)
 
   useEffect(() => {
-    if (game.status !== 'playing') return
+    if (game.status !== 'playing' || game.pendingRonTile) return
 
     if (game.currentPlayer === 0) {
-      if (!game.awaitingDiscard) setGame((current) => beginTurn(current))
+      if (!game.awaitingDiscard) {
+        setGame((current) => beginTurn(current))
+      } else if (game.playerRiichi && !canDeclareTsumo(game)) {
+        const timer = window.setTimeout(() => {
+          setGame((current) => autoDiscardRiichiDraw(current))
+        }, 60)
+        return () => window.clearTimeout(timer)
+      }
       return
     }
 
@@ -35,7 +46,7 @@ export default function App() {
   const handleDiscard = (tile: Tile) => {
     setGame((current) => {
       if (current.currentPlayer !== 0) return current
-      return discardTile(current, tile.id)
+      return discardHumanTile(current, tile.id)
     })
   }
 
@@ -53,10 +64,17 @@ export default function App() {
         </div>
       </header>
 
-      <TableView game={game} onDiscard={handleDiscard} onRestart={() => setGame(newGame())} />
+      <TableView
+        game={game}
+        onDiscard={handleDiscard}
+        onRiichiMode={(enabled) => setGame((current) => setRiichiDeclareMode(current, enabled))}
+        onTsumo={() => setGame((current) => declareWin(current, 'tsumo'))}
+        onRon={() => setGame((current) => declareWin(current, 'ron'))}
+        onRestart={() => setGame(newGame())}
+      />
 
       <footer>
-        鳴き・リーチ・点数計算なし / クリックまたはタップで打牌
+        鳴き・点数計算なし / クリックまたはタップで打牌
       </footer>
     </div>
   )

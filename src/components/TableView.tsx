@@ -1,23 +1,63 @@
-import type { GameState, Tile } from '../gameEngine'
+import {
+  calculateShanten,
+  canDeclareTsumo,
+  getVisibleTiles,
+  getWaitTiles,
+  getYakuHints,
+  type GameState,
+  type Tile,
+} from '../gameEngine'
+import { DiscardHistory } from './DiscardHistory'
 import { HandView } from './HandView'
+import { LearningPanel } from './LearningPanel'
 import { RiverView } from './RiverView'
 
 interface TableViewProps {
   game: GameState
   onDiscard: (tile: Tile) => void
+  onRiichiMode: (enabled: boolean) => void
+  onTsumo: () => void
+  onRon: () => void
   onRestart: () => void
 }
 
 const SEATS = ['south', 'east', 'north', 'west'] as const
 
-export function TableView({ game, onDiscard, onRestart }: TableViewProps) {
+export function TableView({
+  game,
+  onDiscard,
+  onRiichiMode,
+  onTsumo,
+  onRon,
+  onRestart,
+}: TableViewProps) {
   const humanTurn = game.status === 'playing' && game.currentPlayer === 0 && game.awaitingDiscard
+  const freeDiscard = humanTurn && !game.playerRiichi
   const currentPlayer = game.players[game.currentPlayer]
+  const canTsumo = canDeclareTsumo(game)
+  const baselineHand = game.players[0].hand.filter((tile) => tile.id !== game.drawnTileId)
+  const baselineShanten = calculateShanten(baselineHand)
+  const drawnTile = game.players[0].hand.find((tile) => tile.id === game.drawnTileId)
+  const baselineWaits = getWaitTiles(
+    baselineHand,
+    [...getVisibleTiles(game), ...(drawnTile ? [drawnTile] : [])],
+  )
+  const yakuHints = getYakuHints(game.players[0].hand)
   const statusText = game.status === 'draw'
     ? '流局'
-    : humanTurn
-      ? 'あなたの番'
-      : `${currentPlayer.name} 打牌中`
+    : game.status === 'win'
+      ? game.winType === 'tsumo' ? 'ツモ和了' : 'ロン和了'
+      : game.pendingRonTile
+        ? 'ロンできます'
+        : canTsumo
+          ? 'ツモできます'
+          : humanTurn
+            ? game.playerRiichi ? 'リーチ中' : 'あなたの番'
+            : `${currentPlayer.name} 打牌中`
+  const handHint = game.riichiDeclareMode
+    ? 'リーチ宣言中：切る牌を選んでください'
+    : game.lastFeedback
+      ?? (freeDiscard ? '切る牌を選んでください' : game.playerRiichi ? 'リーチ後は自動ツモ切り' : '敵の打牌中…')
 
   return (
     <>
@@ -41,6 +81,7 @@ export function TableView({ game, onDiscard, onRestart }: TableViewProps) {
         <section className="table-center" aria-live="polite">
           <span className="round-label">東一局</span>
           <strong>{statusText}</strong>
+          {game.playerRiichi && <span className="riichi-status">立直</span>}
           <div className="wall-counter">
             <span>山</span>
             <b>{game.wall.length}</b>
@@ -53,16 +94,34 @@ export function TableView({ game, onDiscard, onRestart }: TableViewProps) {
       <HandView
         tiles={game.players[0].hand}
         drawnTileId={game.drawnTileId}
-        canDiscard={humanTurn}
+        canDiscard={freeDiscard}
+        hint={handHint}
         onDiscard={onDiscard}
       />
 
-      {game.status === 'draw' && (
-        <section className="draw-result" role="dialog" aria-label="流局">
-          <span className="result-kicker">牌山終了</span>
-          <h2>流局</h2>
-          <p>全員が最後まで打ち切りました。</p>
-          <button type="button" onClick={onRestart}>もう一局</button>
+      <LearningPanel
+        shanten={baselineShanten}
+        improvementTypeCount={baselineWaits.length}
+        improvementTileCount={baselineWaits.reduce((sum, tile) => sum + tile.remaining, 0)}
+        yakuHints={yakuHints}
+        explanation={game.lastExplanation}
+        feedback={game.lastFeedback}
+        showRiichiButton={humanTurn && !game.playerRiichi}
+        riichiDeclareMode={game.riichiDeclareMode}
+        canTsumo={canTsumo}
+        canRon={Boolean(game.pendingRonTile)}
+        onRiichiMode={onRiichiMode}
+        onTsumo={onTsumo}
+        onRon={onRon}
+      />
+
+      {game.status !== 'playing' && (
+        <section className="round-result" role="dialog" aria-label={game.status === 'draw' ? '流局' : '和了'}>
+          <span className="result-kicker">{game.status === 'draw' ? '牌山終了' : '練習結果'}</span>
+          <h2>{game.status === 'draw' ? '流局' : game.winType === 'tsumo' ? 'ツモ' : 'ロン'}</h2>
+          <p>{game.status === 'draw' ? '最後まで打ち切りました。打牌を振り返りましょう。' : '和了しました。打牌を振り返りましょう。'}</p>
+          <DiscardHistory logs={game.discardLogs} />
+          <button className="restart-button" type="button" onClick={onRestart}>もう一局</button>
         </section>
       )}
     </>
