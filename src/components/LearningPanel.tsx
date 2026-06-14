@@ -15,10 +15,8 @@ interface LearningPanelProps {
   showRiichiButton: boolean
   riichiDeclareMode: boolean
   canTsumo: boolean
-  canRon: boolean
   onRiichiMode: (enabled: boolean) => void
   onTsumo: () => void
-  onRon: () => void
 }
 
 export function LearningPanel({
@@ -33,10 +31,8 @@ export function LearningPanel({
   showRiichiButton,
   riichiDeclareMode,
   canTsumo,
-  canRon,
   onRiichiMode,
   onTsumo,
-  onRon,
 }: LearningPanelProps) {
   return (
     <aside className="learning-panel">
@@ -71,7 +67,6 @@ export function LearningPanel({
           </button>
         )}
         {canTsumo && <button className="win-button" type="button" onClick={onTsumo}>ツモ</button>}
-        {canRon && <button className="win-button" type="button" onClick={onRon}>ロン</button>}
       </div>
     </aside>
   )

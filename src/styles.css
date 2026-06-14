@@ -263,6 +263,17 @@ h1 {
   letter-spacing: .08em;
 }
 
+.hand-action-buttons {
+  display: flex;
+  justify-content: center;
+  margin-top: 5px;
+}
+
+.hand-action-buttons .win-button {
+  min-width: 156px;
+  box-shadow: 0 0 0 2px rgba(232, 200, 121, .35), 0 4px 12px rgba(0, 0, 0, .3);
+}
+
 .learning-panel {
   display: grid;
   grid-template-columns: minmax(230px, .75fr) minmax(340px, 1.25fr);
@@ -755,6 +766,7 @@ footer {
   .hand-zone { margin-top: 12px; }
   .hand { min-height: 62px; gap: 2px; padding-inline: 1px; }
   .hand .tile.drawn { margin-left: 3px; }
+  .hand-action-buttons .win-button { min-width: 144px; }
   .learning-panel { gap: 8px; margin-top: 8px; padding: 9px; border-radius: 13px; }
   .learning-metrics { gap: 5px; }
   .learning-metrics span { flex: 1; padding: 5px 6px; font-size: 9.5px; text-align: center; }

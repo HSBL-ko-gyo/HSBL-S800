@@ -113,7 +113,21 @@ describe('riichi learning flow', () => {
       drawnTileId: winningDiscard.id,
       playerRiichi: true,
     }
-    expect(discardTile(ronState, winningDiscard.id).pendingRonTile?.code).toBe('5m')
+    const pendingRon = discardTile(ronState, winningDiscard.id)
+    expect(pendingRon.pendingRonTile?.code).toBe('5m')
+
+    const html = renderToStaticMarkup(
+      <TableView
+        game={pendingRon}
+        onDiscard={() => undefined}
+        onRiichiMode={() => undefined}
+        onTsumo={() => undefined}
+        onRon={() => undefined}
+        onRestart={() => undefined}
+      />,
+    )
+    expect(html).toMatch(/<section class="hand-zone"[\s\S]*<div class="hand-action-buttons">[\s\S]*>ロン<\/button>[\s\S]*<\/section>/)
+    expect(html.match(/>ロン<\/button>/g)).toHaveLength(1)
   })
 
   it('shows post-discard feedback when a normal discard could have declared riichi', () => {

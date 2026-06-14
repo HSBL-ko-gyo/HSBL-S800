@@ -58,8 +58,10 @@ export function TableView({
             : `${currentPlayer.name} 打牌中`
   const handHint = game.riichiDeclareMode
     ? 'リーチ宣言中：切る牌を選んでください'
-    : game.lastFeedback
-      ?? (freeDiscard ? '切る牌を選んでください' : game.playerRiichi ? 'リーチ後は自動ツモ切り' : '敵の打牌中…')
+    : game.pendingRonTile
+      ? 'ロンできます'
+      : game.lastFeedback
+        ?? (freeDiscard ? '切る牌を選んでください' : game.playerRiichi ? 'リーチ後は自動ツモ切り' : '敵の打牌中…')
 
   return (
     <>
@@ -97,8 +99,10 @@ export function TableView({
         tiles={game.players[0].hand}
         drawnTileId={game.drawnTileId}
         canDiscard={freeDiscard}
+        canRon={Boolean(game.pendingRonTile)}
         hint={handHint}
         onDiscard={onDiscard}
+        onRon={onRon}
       />
 
       <LearningPanel
@@ -113,10 +117,8 @@ export function TableView({
         showRiichiButton={humanTurn && !game.playerRiichi}
         riichiDeclareMode={game.riichiDeclareMode}
         canTsumo={canTsumo}
-        canRon={Boolean(game.pendingRonTile)}
         onRiichiMode={onRiichiMode}
         onTsumo={onTsumo}
-        onRon={onRon}
       />
 
       {game.status !== 'playing' && (

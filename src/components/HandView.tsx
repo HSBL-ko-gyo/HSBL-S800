@@ -6,11 +6,13 @@ interface HandViewProps {
   tiles: Tile[]
   drawnTileId: string | null
   canDiscard: boolean
+  canRon: boolean
   hint: string
   onDiscard: (tile: Tile) => void
+  onRon: () => void
 }
 
-export function HandView({ tiles, drawnTileId, canDiscard, hint, onDiscard }: HandViewProps) {
+export function HandView({ tiles, drawnTileId, canDiscard, canRon, hint, onDiscard, onRon }: HandViewProps) {
   const drawnTile = tiles.find((tile) => tile.id === drawnTileId)
   const concealed = sortTiles(tiles.filter((tile) => tile.id !== drawnTileId))
   const displayed = drawnTile ? [...concealed, drawnTile] : concealed
@@ -30,6 +32,11 @@ export function HandView({ tiles, drawnTileId, canDiscard, hint, onDiscard }: Ha
           />
         ))}
       </div>
+      {canRon && (
+        <div className="hand-action-buttons">
+          <button className="win-button" type="button" onClick={onRon}>ロン</button>
+        </div>
+      )}
       <p className="hand-hint">{hint}</p>
     </section>
   )
