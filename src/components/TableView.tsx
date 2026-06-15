@@ -106,10 +106,13 @@ export function TableView({
             canDiscard={freeDiscard}
             canRon={Boolean(game.pendingRonTile)}
             canTsumo={canTsumo}
+            showRiichiButton={humanTurn && !game.playerRiichi && !canTsumo}
+            riichiDeclareMode={game.riichiDeclareMode}
             hint={handHint}
             onDiscard={onDiscard}
             onRon={onRon}
             onTsumo={onTsumo}
+            onRiichiMode={onRiichiMode}
           />
         </div>
 

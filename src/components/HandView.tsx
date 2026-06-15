@@ -9,10 +9,13 @@ interface HandViewProps {
   canDiscard: boolean
   canRon: boolean
   canTsumo: boolean
+  showRiichiButton: boolean
+  riichiDeclareMode: boolean
   hint: string
   onDiscard: (tile: Tile) => void
   onRon: () => void
   onTsumo: () => void
+  onRiichiMode: (enabled: boolean) => void
 }
 
 export function HandView({
@@ -21,18 +24,25 @@ export function HandView({
   canDiscard,
   canRon,
   canTsumo,
+  showRiichiButton,
+  riichiDeclareMode,
   hint,
   onDiscard,
   onRon,
   onTsumo,
+  onRiichiMode,
 }: HandViewProps) {
   const handRef = useRef<HTMLDivElement>(null)
   const gestureRef = useRef({
     pointerId: -1,
+    startX: 0,
     startY: 0,
     selectedTileId: null as string | null,
+    selectedAtPointerDown: false,
+    moved: false,
     verticalLocked: false,
   })
+  const tapRef = useRef({ tileId: null as string | null, count: 0, lastAt: 0 })
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null)
   const [selectedLift, setSelectedLift] = useState(0)
   const drawnTile = tiles.find((tile) => tile.id === drawnTileId)
@@ -42,6 +52,7 @@ export function HandView({
   useEffect(() => {
     setSelectedTileId(null)
     setSelectedLift(0)
+    tapRef.current = { tileId: null, count: 0, lastAt: 0 }
   }, [drawnTileId, canDiscard])
 
   useEffect(() => {
@@ -51,6 +62,7 @@ export function HandView({
       if (handRef.current?.contains(event.target as Node)) return
       setSelectedTileId(null)
       setSelectedLift(0)
+      tapRef.current = { tileId: null, count: 0, lastAt: 0 }
     }
 
     document.addEventListener('pointerdown', cancelSelection)
@@ -89,9 +101,15 @@ export function HandView({
     event.currentTarget.setPointerCapture(event.pointerId)
     gestureRef.current = {
       pointerId: event.pointerId,
+      startX: event.clientX,
       startY: event.clientY,
       selectedTileId: tileId,
+      selectedAtPointerDown: selectedTileId === tileId,
+      moved: false,
       verticalLocked: false,
+    }
+    if (selectedTileId !== tileId) {
+      tapRef.current = { tileId: null, count: 0, lastAt: 0 }
     }
     setSelectedTileId(tileId)
     setSelectedLift(0)
@@ -102,6 +120,10 @@ export function HandView({
     if (gesture.pointerId !== event.pointerId) return
     event.preventDefault()
 
+    if (Math.abs(event.clientX - gesture.startX) > 6 || Math.abs(event.clientY - gesture.startY) > 6) {
+      gesture.moved = true
+    }
+
     const upwardDistance = Math.max(0, gesture.startY - event.clientY)
     if (upwardDistance >= 10) gesture.verticalLocked = true
 
@@ -109,6 +131,8 @@ export function HandView({
       const hoveredTileId = tileIdAtX(event.clientX)
       if (hoveredTileId && hoveredTileId !== gesture.selectedTileId) {
         gesture.selectedTileId = hoveredTileId
+        gesture.selectedAtPointerDown = false
+        tapRef.current = { tileId: null, count: 0, lastAt: 0 }
         setSelectedTileId(hoveredTileId)
       }
     }
@@ -123,6 +147,7 @@ export function HandView({
       }
       setSelectedTileId(null)
       setSelectedLift(0)
+      tapRef.current = { tileId: null, count: 0, lastAt: 0 }
       if (tileToDiscard) onDiscard(tileToDiscard)
     }
   }
@@ -132,6 +157,24 @@ export function HandView({
     if (gesture.pointerId !== event.pointerId) return
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+
+    if (!gesture.moved && gesture.selectedAtPointerDown && gesture.selectedTileId) {
+      const now = Date.now()
+      const continuesDoubleTap = tapRef.current.tileId === gesture.selectedTileId
+        && now - tapRef.current.lastAt <= 500
+      tapRef.current = {
+        tileId: gesture.selectedTileId,
+        count: continuesDoubleTap ? tapRef.current.count + 1 : 1,
+        lastAt: now,
+      }
+
+      if (tapRef.current.count >= 2) {
+        const tileToDiscard = displayed.find((tile) => tile.id === gesture.selectedTileId)
+        tapRef.current = { tileId: null, count: 0, lastAt: 0 }
+        setSelectedTileId(null)
+        if (tileToDiscard) onDiscard(tileToDiscard)
+      }
     }
 
     gesture.pointerId = -1
@@ -175,13 +218,22 @@ export function HandView({
       </div>
       <span className="hand-scroll-hint">
         {selectedTileId
-          ? '横になぞって選択・上へスワイプして打牌'
-          : '牌を押さえたまま選び、上へスワイプして打牌'}
+          ? '横になぞって選択・上スワイプ または ダブルタップで打牌'
+          : '1回タップで拡大・選択後のダブルタップで打牌'}
       </span>
-      {(canTsumo || canRon) && (
+      {(canTsumo || canRon || showRiichiButton) && (
         <div className="hand-action-buttons">
           {canTsumo && <button className="win-button" type="button" onClick={onTsumo}>ツモ</button>}
           {canRon && <button className="win-button" type="button" onClick={onRon}>ロン</button>}
+          {showRiichiButton && (
+            <button
+              className={`riichi-button hand-riichi-button ${riichiDeclareMode ? 'is-active' : ''}`}
+              type="button"
+              onClick={() => onRiichiMode(!riichiDeclareMode)}
+            >
+              {riichiDeclareMode ? 'リーチ取消' : 'リーチ宣言'}
+            </button>
+          )}
         </div>
       )}
       <p className="hand-hint">{hint}</p>

@@ -281,6 +281,8 @@ h1 {
   box-shadow: 0 0 0 2px rgba(232, 200, 121, .35), 0 4px 12px rgba(0, 0, 0, .3);
 }
 
+.hand-riichi-button { display: none; }
+
 .learning-panel {
   display: grid;
   grid-template-columns: minmax(230px, .75fr) minmax(340px, 1.25fr);
@@ -984,6 +986,17 @@ h1 {
     letter-spacing: .05em;
   }
   .hand-action-buttons .win-button { min-width: 144px; }
+  .hand-action-buttons {
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .hand-action-buttons .win-button,
+  .hand-action-buttons .hand-riichi-button {
+    display: inline-flex;
+    min-width: 112px;
+    justify-content: center;
+  }
+  .learning-panel > .action-buttons { display: none; }
   .learning-panel { gap: 6px; margin-top: 5px; padding: 8px; border-radius: 13px; }
   .learning-metrics { gap: 5px; }
   .learning-metrics span { flex: 1; padding: 5px 6px; font-size: 9.5px; text-align: center; }
