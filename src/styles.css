@@ -234,6 +234,7 @@ h1 {
 
 .mobile-hand-overview,
 .mobile-hand-guide,
+.mobile-hand-control,
 .hand.mobile-hand-rail { display: none; }
 
 .hand {
@@ -1040,15 +1041,21 @@ h1 {
   .mobile-hand-overview .tile.overview-selected {
     box-shadow: 0 calc(var(--tile-width) * .09) 0 var(--amber), 0 0 0 1px var(--gold), 0 calc(var(--tile-width) * .13) calc(var(--tile-width) * .18) rgba(0, 0, 0, .45);
   }
-  .hand.mobile-hand-rail {
+  .mobile-hand-control {
     --rail-width: min(356px, calc(100vw - 34px));
     --rail-tile-width: 46px;
     --rail-gap: 2px;
-    display: flex;
+    display: block;
     position: relative;
     width: var(--rail-width);
-    min-height: 116px;
     margin: 0 auto;
+  }
+  .hand.mobile-hand-rail {
+    display: flex;
+    position: relative;
+    width: 100%;
+    min-height: 116px;
+    margin: 0;
     justify-content: flex-start;
     padding: 46px 0 10px;
     overflow-x: auto;
@@ -1056,6 +1063,62 @@ h1 {
     scrollbar-width: none;
     touch-action: none;
     overscroll-behavior-x: contain;
+  }
+  .discard-threshold-guide {
+    display: flex;
+    position: absolute;
+    z-index: 6;
+    top: 11px;
+    left: 18px;
+    right: 18px;
+    align-items: center;
+    gap: 7px;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity .12s, transform .12s;
+  }
+  .hand-zone[data-has-selected-tile="true"] .discard-threshold-guide {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .discard-threshold-label {
+    flex: 0 0 auto;
+    padding: 2px 7px;
+    border: 1px solid rgba(232, 200, 121, .32);
+    border-radius: 999px;
+    background: rgba(0, 0, 0, .28);
+    color: rgba(247, 242, 228, .68);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .06em;
+  }
+  .discard-threshold-line {
+    position: relative;
+    flex: 1;
+    height: 2px;
+    border-radius: 999px;
+    background: rgba(247, 242, 228, .16);
+    box-shadow: 0 0 0 1px rgba(232, 200, 121, .12);
+    overflow: hidden;
+  }
+  .discard-threshold-line::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: calc(var(--discard-progress, 0) * 100%);
+    border-radius: inherit;
+    background: linear-gradient(90deg, rgba(232, 200, 121, .42), var(--gold));
+    box-shadow: 0 0 10px rgba(232, 200, 121, .28);
+  }
+  .hand-zone[data-near-discard="true"] .discard-threshold-label {
+    border-color: rgba(232, 200, 121, .75);
+    background: rgba(232, 200, 121, .18);
+    color: var(--gold);
+  }
+  .hand-zone[data-near-discard="true"] .discard-threshold-line {
+    background: rgba(232, 200, 121, .26);
+    box-shadow: 0 0 0 1px rgba(232, 200, 121, .42), 0 0 13px rgba(232, 200, 121, .2);
   }
   .hand.mobile-hand-rail::-webkit-scrollbar {
     display: none;

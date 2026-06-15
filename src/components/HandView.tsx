@@ -3,6 +3,8 @@ import type { Tile } from '../gameEngine'
 import { sortTiles } from '../gameEngine'
 import { TileView } from './TileView'
 
+const DISCARD_SWIPE_THRESHOLD = 48
+
 interface HandViewProps {
   tiles: Tile[]
   drawnTileId: string | null
@@ -53,6 +55,7 @@ export function HandView({
   const tapRef = useRef({ tileId: null as string | null, count: 0, lastAt: 0 })
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null)
   const [selectedLift, setSelectedLift] = useState(0)
+  const [discardProgress, setDiscardProgress] = useState(0)
   const [overviewWindow, setOverviewWindow] = useState({ left: 0, width: 60 })
   const drawnTile = tiles.find((tile) => tile.id === drawnTileId)
   const concealed = sortTiles(tiles.filter((tile) => tile.id !== drawnTileId))
@@ -112,6 +115,7 @@ export function HandView({
     overviewPointerRef.current = event.pointerId
     setSelectedTileId(null)
     setSelectedLift(0)
+    setDiscardProgress(0)
     tapRef.current = { tileId: null, count: 0, lastAt: 0 }
     moveRailFromOverview(event.clientX, event.currentTarget)
   }
@@ -153,6 +157,7 @@ export function HandView({
       ) return
       setSelectedTileId(null)
       setSelectedLift(0)
+      setDiscardProgress(0)
       tapRef.current = { tileId: null, count: 0, lastAt: 0 }
     }
 
@@ -193,6 +198,7 @@ export function HandView({
     }
     setSelectedTileId(tileId)
     setSelectedLift(0)
+    setDiscardProgress(0)
   }
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
@@ -221,16 +227,18 @@ export function HandView({
     if (gesture.horizontalLocked) {
       event.currentTarget.scrollLeft = gesture.startScrollLeft - horizontalDistance
       setSelectedLift(0)
+      setDiscardProgress(0)
       syncOverviewWindow()
       selectRailCenterTile()
       return
     }
 
     if (gesture.verticalLocked) {
-      setSelectedLift(Math.min(upwardDistance, 42))
+      setSelectedLift(Math.min(upwardDistance, DISCARD_SWIPE_THRESHOLD))
+      setDiscardProgress(Math.min(1, upwardDistance / DISCARD_SWIPE_THRESHOLD))
     }
 
-    if (gesture.verticalLocked && upwardDistance >= 48) {
+    if (gesture.verticalLocked && upwardDistance >= DISCARD_SWIPE_THRESHOLD) {
       const tileToDiscard = displayed.find((tile) => tile.id === gesture.selectedTileId)
       gesture.pointerId = -1
       if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -238,6 +246,7 @@ export function HandView({
       }
       setSelectedTileId(null)
       setSelectedLift(0)
+      setDiscardProgress(0)
       tapRef.current = { tileId: null, count: 0, lastAt: 0 }
       if (tileToDiscard) onDiscard(tileToDiscard)
     }
@@ -264,6 +273,7 @@ export function HandView({
         const tileToDiscard = displayed.find((tile) => tile.id === gesture.selectedTileId)
         tapRef.current = { tileId: null, count: 0, lastAt: 0 }
         setSelectedTileId(null)
+        setDiscardProgress(0)
         if (tileToDiscard) onDiscard(tileToDiscard)
       }
     }
@@ -272,6 +282,7 @@ export function HandView({
     gesture.horizontalLocked = false
     gesture.verticalLocked = false
     setSelectedLift(0)
+    setDiscardProgress(0)
   }
 
   const cancelGesture = (event: PointerEvent<HTMLDivElement>) => {
@@ -280,13 +291,19 @@ export function HandView({
     gestureRef.current.horizontalLocked = false
     gestureRef.current.verticalLocked = false
     setSelectedLift(0)
+    setDiscardProgress(0)
   }
 
   return (
     <section
       className="hand-zone"
+      data-has-selected-tile={selectedTileId ? 'true' : undefined}
+      data-near-discard={discardProgress >= .9 ? 'true' : undefined}
       aria-label="あなたの手牌"
-      style={{ '--selected-lift': `${selectedLift}px` } as CSSProperties}
+      style={{
+        '--selected-lift': `${selectedLift}px`,
+        '--discard-progress': discardProgress,
+      } as CSSProperties}
     >
       <span className="mobile-hand-guide overview-guide">全体表示・ドラッグで移動</span>
       <div
@@ -317,31 +334,39 @@ export function HandView({
         ))}
       </div>
       <span className="mobile-hand-guide rail-guide">拡大操作・ここを横スライド</span>
-      <div
-        className={`hand mobile-hand-rail ${canDiscard ? 'is-active' : ''}`}
-        ref={handRef}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={finishGesture}
-        onPointerCancel={cancelGesture}
-        onScroll={syncOverviewWindow}
-      >
-        <div className="mobile-hand-track">
-          {displayed.map((tile) => (
-            <span className="hand-tile-slot" data-hand-tile-id={tile.id} key={tile.id}>
-              <TileView
-                tile={tile}
-                usage="hand"
-                className={[
-                  tile.id === drawnTileId ? 'drawn' : '',
-                  tile.id === selectedTileId ? 'selected' : '',
-                ].filter(Boolean).join(' ')}
-                visualState={canDiscard ? undefined : 'static'}
-                disabled={!canDiscard}
-                onClick={canDiscard ? handleTileClick : undefined}
-              />
-            </span>
-          ))}
+      <div className="mobile-hand-control">
+        <span className="discard-threshold-guide" aria-hidden="true">
+          <span className="discard-threshold-label">
+            {discardProgress >= .9 ? '離すと打牌' : 'ここまで上げると打牌'}
+          </span>
+          <span className="discard-threshold-line" />
+        </span>
+        <div
+          className={`hand mobile-hand-rail ${canDiscard ? 'is-active' : ''}`}
+          ref={handRef}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={finishGesture}
+          onPointerCancel={cancelGesture}
+          onScroll={syncOverviewWindow}
+        >
+          <div className="mobile-hand-track">
+            {displayed.map((tile) => (
+              <span className="hand-tile-slot" data-hand-tile-id={tile.id} key={tile.id}>
+                <TileView
+                  tile={tile}
+                  usage="hand"
+                  className={[
+                    tile.id === drawnTileId ? 'drawn' : '',
+                    tile.id === selectedTileId ? 'selected' : '',
+                  ].filter(Boolean).join(' ')}
+                  visualState={canDiscard ? undefined : 'static'}
+                  disabled={!canDiscard}
+                  onClick={canDiscard ? handleTileClick : undefined}
+                />
+              </span>
+            ))}
+          </div>
         </div>
       </div>
       <div className={`hand desktop-hand ${canDiscard ? 'is-active' : ''}`}>
