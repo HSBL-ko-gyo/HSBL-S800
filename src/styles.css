@@ -932,7 +932,14 @@ h1 {
     gap: 1px;
     padding: 23px 5px 12px;
     overflow: visible;
-    touch-action: manipulation;
+    touch-action: none;
+  }
+  .hand-tile-slot {
+    display: flex;
+    width: calc((100vw - 58px) / 14);
+    flex: 0 0 calc((100vw - 58px) / 14);
+    align-self: flex-end;
+    justify-content: center;
   }
   .hand .tile.hand {
     --tile-width: calc((100vw - 58px) / 14);
