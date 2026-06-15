@@ -1,4 +1,4 @@
-import { useEffect, useRef, type MouseEvent, type PointerEvent } from 'react'
+import { useEffect, useState } from 'react'
 import type { Tile } from '../gameEngine'
 import { sortTiles } from '../gameEngine'
 import { TileView } from './TileView'
@@ -26,103 +26,52 @@ export function HandView({
   onRon,
   onTsumo,
 }: HandViewProps) {
-  const handRef = useRef<HTMLDivElement>(null)
-  const dragRef = useRef({
-    pointerId: -1,
-    startX: 0,
-    startY: 0,
-    startScrollLeft: 0,
-    dragging: false,
-  })
-  const suppressClickRef = useRef(false)
+  const [selectedTileId, setSelectedTileId] = useState<string | null>(null)
   const drawnTile = tiles.find((tile) => tile.id === drawnTileId)
   const concealed = sortTiles(tiles.filter((tile) => tile.id !== drawnTileId))
   const displayed = drawnTile ? [...concealed, drawnTile] : concealed
 
   useEffect(() => {
-    if (!drawnTileId || !handRef.current) return
-    handRef.current.scrollLeft = handRef.current.scrollWidth
-  }, [drawnTileId])
+    setSelectedTileId(null)
+  }, [drawnTileId, canDiscard])
 
-  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.pointerType === 'mouse' && event.button !== 0) return
-    const hand = handRef.current
-    if (!hand || hand.scrollWidth <= hand.clientWidth) return
-
-    dragRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      startScrollLeft: hand.scrollLeft,
-      dragging: false,
-    }
-    suppressClickRef.current = false
-  }
-
-  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    const hand = handRef.current
-    const drag = dragRef.current
-    if (!hand || drag.pointerId !== event.pointerId) return
-
-    const deltaX = event.clientX - drag.startX
-    const deltaY = event.clientY - drag.startY
-    if (!drag.dragging) {
-      if (Math.abs(deltaX) < 5 && Math.abs(deltaY) < 5) return
-      if (Math.abs(deltaY) > Math.abs(deltaX)) return
-
-      drag.dragging = true
-      suppressClickRef.current = true
-      event.currentTarget.setPointerCapture(event.pointerId)
+  const handleTileClick = (tile: Tile) => {
+    const usesMobileConfirmation = window.matchMedia('(max-width: 480px)').matches
+    if (!usesMobileConfirmation) {
+      onDiscard(tile)
+      return
     }
 
-    event.preventDefault()
-    hand.scrollLeft = drag.startScrollLeft - deltaX
-  }
-
-  const finishPointerDrag = (event: PointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current
-    if (drag.pointerId !== event.pointerId) return
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId)
+    if (selectedTileId === tile.id) {
+      setSelectedTileId(null)
+      onDiscard(tile)
+      return
     }
-    drag.pointerId = -1
-    drag.dragging = false
-    window.setTimeout(() => {
-      suppressClickRef.current = false
-    }, 0)
-  }
 
-  const handleClickCapture = (event: MouseEvent<HTMLDivElement>) => {
-    if (!suppressClickRef.current) return
-    event.preventDefault()
-    event.stopPropagation()
-    suppressClickRef.current = false
+    setSelectedTileId(tile.id)
   }
 
   return (
     <section className="hand-zone" aria-label="あなたの手牌">
-      <div
-        className={`hand ${canDiscard ? 'is-active' : ''}`}
-        ref={handRef}
-        onClickCapture={handleClickCapture}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={finishPointerDrag}
-        onPointerCancel={finishPointerDrag}
-      >
+      <div className={`hand ${canDiscard ? 'is-active' : ''}`}>
         {displayed.map((tile) => (
           <TileView
             key={tile.id}
             tile={tile}
             usage="hand"
-            className={tile.id === drawnTileId ? 'drawn' : ''}
+            className={[
+              tile.id === drawnTileId ? 'drawn' : '',
+              tile.id === selectedTileId ? 'selected' : '',
+            ].filter(Boolean).join(' ')}
             visualState={canDiscard ? undefined : 'static'}
             disabled={!canDiscard}
-            onClick={canDiscard ? onDiscard : undefined}
+            onClick={canDiscard ? handleTileClick : undefined}
           />
         ))}
       </div>
-      <span className="hand-scroll-hint">横にスワイプして牌を選べます</span>
+      <span className="hand-scroll-hint">
+        {selectedTileId ? '浮いた牌をもう一度タップで打牌' : '牌をタップして拡大・もう一度タップで打牌'}
+      </span>
       {(canTsumo || canRon) && (
         <div className="hand-action-buttons">
           {canTsumo && <button className="win-button" type="button" onClick={onTsumo}>ツモ</button>}
