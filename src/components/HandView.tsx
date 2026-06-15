@@ -98,7 +98,6 @@ export function HandView({
       : Math.max(0, Math.min(1, (pointerRatio - visibleRatio / 2) / (1 - visibleRatio)))
     rail.scrollLeft = scrollRatio * Math.max(0, rail.scrollWidth - rail.clientWidth)
     syncOverviewWindow()
-    selectRailCenterTile()
   }
 
   const handleOverviewPointerDown = (event: PointerEvent<HTMLDivElement>) => {
@@ -107,6 +106,9 @@ export function HandView({
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
     overviewPointerRef.current = event.pointerId
+    setSelectedTileId(null)
+    setSelectedLift(0)
+    tapRef.current = { tileId: null, count: 0, lastAt: 0 }
     moveRailFromOverview(event.clientX, event.currentTarget)
   }
 
