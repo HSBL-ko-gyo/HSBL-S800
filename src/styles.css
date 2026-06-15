@@ -605,6 +605,50 @@ h1 {
 
 .learning-metrics b { color: var(--ivory); }
 
+.hand-plan-card {
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid rgba(134, 203, 255, .28);
+  border-radius: 11px;
+  background: rgba(0, 0, 0, .14);
+}
+
+.hand-plan-card strong {
+  display: block;
+  color: #86cbff;
+  font-family: 'Shippori Mincho B1', serif;
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.hand-plan-card p {
+  margin-top: 6px;
+  color: rgba(247, 242, 228, .68);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.hand-plan-reason {
+  padding-top: 6px;
+  border-top: 1px dashed rgba(247, 242, 228, .12);
+  color: rgba(247, 242, 228, .82);
+  font-weight: 800;
+}
+
+.hand-plan-action {
+  color: rgba(232, 200, 121, .9);
+  font-weight: 800;
+}
+
+.hand-plan-push { border-color: rgba(232, 200, 121, .48); }
+.hand-plan-push strong { color: var(--gold); }
+.hand-plan-fast { border-color: rgba(93, 190, 132, .42); }
+.hand-plan-fast strong { color: #8ce3aa; }
+.hand-plan-value { border-color: rgba(226, 159, 67, .42); }
+.hand-plan-value strong { color: #f0b66b; }
+.hand-plan-patient { border-color: rgba(247, 242, 228, .2); }
+.hand-plan-patient strong { color: rgba(247, 242, 228, .82); }
+
 .learning-label {
   display: block;
   margin-bottom: 6px;
@@ -1269,6 +1313,9 @@ h1 {
   .learning-label { font-size: 11px; }
   .hint-chip,
   .hint-empty { font-size: 12px; }
+  .hand-plan-card { padding: 14px 15px; }
+  .hand-plan-card strong { font-size: 20px; }
+  .hand-plan-card p { font-size: 13px; line-height: 1.65; }
   .evaluation-card { padding: 14px 15px; }
   .evaluation-card.is-empty { font-size: 13px; }
   .evaluation-grade { font-size: 20px; }
@@ -1337,10 +1384,13 @@ h1 {
   }
 
   .game-layout .yaku-hints,
+  .game-layout .hand-plan-card,
   .game-layout .evaluation-card,
   .game-layout .riichi-wait-panel { padding: 9px 10px; }
 
   .game-layout .learning-label { margin-bottom: 4px; }
+  .game-layout .hand-plan-card strong { font-size: 17px; }
+  .game-layout .hand-plan-card p { margin-top: 5px; font-size: 11px; line-height: 1.5; }
   .game-layout .evaluation-grade { font-size: 18px; }
   .game-layout .evaluation-meta,
   .game-layout .evaluation-deltas { margin-top: 5px; font-size: 10px; }
@@ -1381,6 +1431,9 @@ h1 {
   .game-layout .learning-label { font-size: 13px; }
   .game-layout .hint-chip,
   .game-layout .hint-empty { font-size: 14px; }
+  .game-layout .hand-plan-card { padding: 13px 14px; }
+  .game-layout .hand-plan-card strong { font-size: 22px; }
+  .game-layout .hand-plan-card p { font-size: 14px; line-height: 1.6; }
   .game-layout .evaluation-card { padding: 13px 14px; }
   .game-layout .evaluation-grade { font-size: 23px; }
   .game-layout .evaluation-meta,
@@ -1759,8 +1812,11 @@ h1 {
   .learning-metrics { gap: 5px; }
   .learning-metrics span { flex: 1; padding: 5px 6px; font-size: 9.5px; text-align: center; }
   .yaku-hints,
+  .hand-plan-card,
   .evaluation-card { padding: 9px; }
   .hint-chip { padding: 3px 7px; font-size: 9.5px; }
+  .hand-plan-card strong { font-size: 14px; }
+  .hand-plan-card p { font-size: 10px; }
   .evaluation-grade { font-size: 14px; }
   .evaluation-card p { font-size: 10px; }
   .evaluation-meta,

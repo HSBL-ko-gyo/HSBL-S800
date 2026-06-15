@@ -1,13 +1,16 @@
 import { shantenLabel, type DiscardEvaluation, type ImprovementTile, type Tile, type YakuHint } from '../gameEngine'
 import { DiscardEvaluationPanel } from './DiscardEvaluationPanel'
+import { HandPlanPanel } from './HandPlanPanel'
 import { RiichiWaitPanel } from './RiichiWaitPanel'
 import { YakuInfoPanel } from './YakuInfoPanel'
+import type { HandPlanAdvice } from '../gameEngine'
 
 interface LearningPanelProps {
   shanten: number
   improvementTypeCount: number
   improvementTileCount: number
   yakuHints: YakuHint[]
+  handPlan: HandPlanAdvice
   hand: Tile[]
   evaluation: DiscardEvaluation | null
   riichiWaits: ImprovementTile[]
@@ -24,6 +27,7 @@ export function LearningPanel({
   improvementTypeCount,
   improvementTileCount,
   yakuHints,
+  handPlan,
   hand,
   evaluation,
   riichiWaits,
@@ -36,12 +40,14 @@ export function LearningPanel({
 }: LearningPanelProps) {
   return (
     <aside className="learning-panel">
+      <DiscardEvaluationPanel evaluation={evaluation} />
+
       <div className="learning-metrics">
         <span>現在: <b>{shantenLabel(shanten)}</b></span>
         <span>受け入れ: <b>{improvementTypeCount}種{improvementTileCount}枚</b></span>
       </div>
 
-      <DiscardEvaluationPanel evaluation={evaluation} />
+      <HandPlanPanel advice={handPlan} />
       <RiichiWaitPanel waits={riichiWaits} />
 
       <section className="yaku-hints">

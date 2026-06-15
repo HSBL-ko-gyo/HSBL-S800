@@ -1,4 +1,5 @@
 import {
+  buildHandPlanAdvice,
   calculateShanten,
   canDeclareTsumo,
   getChiOptions,
@@ -125,12 +126,19 @@ export function TableView({
   const riichiButtonEnabled = humanTurn && !game.playerRiichi && !canTsumo && game.players[0].melds.length === 0
   const baselineHand = game.players[0].hand.filter((tile) => tile.id !== game.drawnTileId)
   const humanMeldCount = game.players[0].melds.length
+  const visibleTiles = getVisibleTiles(game)
   const baselineShanten = calculateShanten(baselineHand, humanMeldCount)
   const drawnTile = game.players[0].hand.find((tile) => tile.id === game.drawnTileId)
   const baselineWaits = getWaitTiles(
     baselineHand,
-    [...getVisibleTiles(game), ...(drawnTile ? [drawnTile] : [])],
+    [...visibleTiles, ...(drawnTile ? [drawnTile] : [])],
     humanMeldCount,
+  )
+  const handPlan = buildHandPlanAdvice(
+    game.players[0].hand,
+    visibleTiles,
+    humanMeldCount,
+    game.players[0].river.length + (humanTurn ? 1 : 0),
   )
   const yakuHints = getYakuHints(game.players[0].hand)
   const riichiWaits = getRiichiWaitTiles(game)
@@ -280,6 +288,7 @@ export function TableView({
           improvementTypeCount={baselineWaits.length}
           improvementTileCount={baselineWaits.reduce((sum, tile) => sum + tile.remaining, 0)}
           yakuHints={yakuHints}
+          handPlan={handPlan}
           hand={game.players[0].hand}
           evaluation={game.lastEvaluation}
           riichiWaits={riichiWaits}

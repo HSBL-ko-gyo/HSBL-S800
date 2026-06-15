@@ -7,6 +7,7 @@ import {
   analyzeDiscardOptions,
   autoDiscardRiichiDraw,
   buildDiscardEvaluation,
+  buildHandPlanAdvice,
   calculateShanten,
   canDeclareTsumo,
   canRiichiAfterDiscard,
@@ -421,8 +422,9 @@ describe('yaku hints', () => {
     expect(getYakuHints(['E', 'E', '2m', '3m', '4m', '3p', '4p', '5p', '4s', '5s', '6s', '7p', '8p'])).toContain('役牌候補')
   })
 
-  it('suggests seven pairs when four pairs exist', () => {
-    expect(getYakuHints(['2m', '2m', '4m', '4m', '3p', '3p', '5s', '5s', '6s', '7s', '8s', 'E', 'F'])).toContain('七対子候補')
+  it('waits until five pairs before suggesting seven pairs', () => {
+    expect(getYakuHints(['2m', '2m', '4m', '4m', '3p', '3p', '5s', '5s', '6s', '7s', '8s', 'E', 'F'])).not.toContain('七対子候補')
+    expect(getYakuHints(['2m', '2m', '4m', '4m', '3p', '3p', '5s', '5s', '6s', '6s', '8s', 'E', 'F'])).toContain('七対子候補')
   })
 
   it('suggests honitsu when the hand strongly favors one suit plus honors', () => {
@@ -452,6 +454,7 @@ describe('discard evaluations', () => {
     expect(html).toContain('候補内')
     expect(html).toContain('最善候補:')
     expect(html).toContain('受け入れ差')
+    expect(html.indexOf('打牌評価')).toBeLessThan(html.indexOf('打牌前の注意点'))
   })
 
   it('only mentions riichi for a riichi-capable discard', () => {
@@ -484,6 +487,54 @@ describe('discard evaluations', () => {
     expect(result.players[0].river.at(-1)?.tile.id).toBe(selectedTile.id)
     expect(result.lastEvaluation?.discard.id).toBe(selectedTile.id)
     expect(state.players[0].hand.some((tile) => tile.id === result.lastEvaluation?.discard.id)).toBe(true)
+  })
+})
+
+describe('hand plan advice', () => {
+  it('shows a light fast plan when an open route is available', () => {
+    const hand = codesToTiles(['2m', '3m', '4m', '6m', '7m', '2p', '4p', '7p', '8p', '3s', '5s', 'E', 'E', '9s'])
+    const advice = buildHandPlanAdvice(hand, [], 0, 1)
+
+    expect(advice.kind).toBe('fast')
+    expect(advice.label).toBe('高望みしすぎない')
+    expect(advice.reason).toContain('1巡目(序盤)')
+    expect(advice.reason).toContain('受け入れ')
+    expect(advice.action).toContain('序盤は形と役の種')
+  })
+
+  it('warns against forcing a slow cheap hand after the early window', () => {
+    const hand = codesToTiles(['1m', '4m', '7m', '1p', '4p', '7p', '1s', '4s', '7s', 'E', 'S', 'W', 'N', 'C'])
+    const advice = buildHandPlanAdvice(hand, [], 0, 7)
+
+    expect(advice.kind).toBe('patient')
+    expect(advice.label).toBe('無理押し注意')
+    expect(advice.reason).toContain('7巡目(中盤)')
+    expect(advice.action).toContain('中盤はテンパイ速度と安全牌')
+  })
+
+  it('does not overvalue loose yaku hints when the hand shape is still rough', () => {
+    const hand = codesToTiles(['1p', '2p', '3p', '3p', '6p', '8p', '2s', '3s', '3s', '9s', 'E', 'S', 'C', '8s'])
+    const advice = buildHandPlanAdvice(hand, [], 0, 1)
+
+    expect(advice.label).toBe('決め打ちしすぎ注意')
+    expect(advice.label).not.toBe('打点を見るなら形も確認')
+  })
+
+  it('mentions the late-round defensive priority inside the same advice text', () => {
+    const hand = codesToTiles(['1m', '4m', '7m', '1p', '4p', '7p', '1s', '4s', '7s', 'E', 'S', 'W', 'N', 'C'])
+    const advice = buildHandPlanAdvice(hand, [], 0, 13)
+
+    expect(advice.reason).toContain('13巡目(終盤)')
+    expect(advice.action).toContain('終盤は無理な手作りより放銃回避')
+  })
+
+  it('warns that four pairs are heavy rather than easy seven pairs', () => {
+    const hand = codesToTiles(['2m', '2m', '4m', '4m', '3p', '3p', '5s', '5s', '6s', '7s', '8s', 'E', 'F', '9m'])
+    const advice = buildHandPlanAdvice(hand, [], 0, 3)
+
+    expect(advice.yakuHints).not.toContain('七対子候補')
+    expect(advice.action).toContain('対子が多い')
+    expect(advice.action).toContain('七対子決め打ちより')
   })
 })
 

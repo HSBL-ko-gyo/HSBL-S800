@@ -114,6 +114,21 @@ export interface DiscardLog {
   explanation: string
 }
 
+export type HandPlanKind = 'push' | 'fast' | 'value' | 'patient'
+
+export interface HandPlanAdvice {
+  kind: HandPlanKind
+  label: string
+  stance: string
+  reason: string
+  action: string
+  shanten: number
+  improvementTypeCount: number
+  improvementTileCount: number
+  playerTurn: number
+  yakuHints: YakuHint[]
+}
+
 export interface RollbackSnapshot {
   players: PlayerState[]
   wall: Tile[]
@@ -349,7 +364,7 @@ export function getYakuHints(hand: Array<Tile | TileCode>): YakuHint[] {
 
   if (terminalOrHonorCount <= 2 && codes.length >= 10) hints.push('断么九')
   if (honorPair) hints.push('役牌候補')
-  if (pairCount >= 4) hints.push('七対子候補')
+  if (pairCount >= 5) hints.push('七対子候補')
 
   const suitTotals = [0, 1, 2].map((suit) =>
     counts.slice(suit * 9, suit * 9 + 9).reduce((sum, count) => sum + count, 0),
@@ -474,6 +489,128 @@ export function analyzeDiscardOptions(
     ...option,
     rank: 1 + raw.filter((candidate) => compareOptions(candidate, option) < 0).length,
   }))
+}
+
+function uniqueYakuHints(hints: YakuHint[]): YakuHint[] {
+  return [...new Set(hints)]
+}
+
+function hasOpenHandRoute(hints: YakuHint[]): boolean {
+  return hints.some((hint) => ['断么九', '役牌候補', '混一色気味'].includes(hint))
+}
+
+function hasValueRoute(hints: YakuHint[]): boolean {
+  return hints.some((hint) => ['混一色気味', '一気通貫候補', '三色同順候補', '七対子候補'].includes(hint))
+}
+
+function turnStageAdvice(turn: number): { label: string; guidance: string } {
+  if (turn <= 6) {
+    return {
+      label: '序盤',
+      guidance: '序盤は形と役の種を作る時間。',
+    }
+  }
+  if (turn <= 12) {
+    return {
+      label: '中盤',
+      guidance: '中盤はテンパイ速度と安全牌の両方を見る時間。',
+    }
+  }
+  return {
+    label: '終盤',
+    guidance: '終盤は無理な手作りより放銃回避を優先する時間。',
+  }
+}
+
+export function buildHandPlanAdvice(
+  hand: Tile[],
+  visibleTiles: Tile[] = [],
+  meldCount = 0,
+  playerTurn = 1,
+): HandPlanAdvice {
+  const normalizedTurn = Math.max(1, playerTurn)
+  const stage = turnStageAdvice(normalizedTurn)
+  const isDiscardTurn = hand.length % 3 === 2
+
+  const bestOptions = isDiscardTurn
+    ? analyzeDiscardOptions(hand, visibleTiles, meldCount)
+    : []
+  const bestShanten = bestOptions.length > 0
+    ? Math.min(...bestOptions.map((option) => option.shanten))
+    : calculateShanten(hand, meldCount)
+  const bestShantenOptions = bestOptions.filter((option) => option.shanten === bestShanten)
+  const bestImprovementTileCount = bestShantenOptions.length > 0
+    ? Math.max(...bestShantenOptions.map((option) => option.improvementTileCount))
+    : getWaitTiles(hand, visibleTiles, meldCount).reduce((sum, tile) => sum + tile.remaining, 0)
+  const bestImprovementTypeCount = bestShantenOptions.length > 0
+    ? Math.max(...bestShantenOptions.map((option) => option.improvementTypeCount))
+    : getWaitTiles(hand, visibleTiles, meldCount).length
+  const counts = toCounts(hand)
+  const pairCount = counts.filter((count) => count >= 2).length
+  const yakuHints = uniqueYakuHints([
+    ...getYakuHints(hand),
+    ...bestShantenOptions.flatMap((option) => option.yakuHints),
+  ])
+  const openRoute = hasOpenHandRoute(yakuHints)
+  const valueRoute = hasValueRoute(yakuHints)
+  const earlyWindow = normalizedTurn <= 6
+  const fastEnough = bestShanten <= 2 && bestImprovementTileCount >= 12
+  const nearlyThere = bestShanten <= 1
+  const strongValueRoute = yakuHints.includes('混一色気味')
+    ? bestShanten <= 3 && bestImprovementTileCount >= 16
+    : valueRoute && bestShanten <= 2 && bestImprovementTileCount >= 12
+  const tooSlowForCheap = bestShanten >= 3 && !strongValueRoute && (!earlyWindow || bestImprovementTileCount < 24)
+
+  let kind: HandPlanKind
+  let label: string
+  let stance: string
+  let action: string
+
+  if (nearlyThere && bestImprovementTileCount >= 6) {
+    kind = 'push'
+    label = '先制チャンスを逃さない'
+    stance = 'テンパイ速度を最優先。先に入ればリーチや即押しの価値があります。'
+    action = '受け入れ最大の打牌を優先。テンパイしたら良形か先制なら強めに。'
+  } else if ((fastEnough || bestShanten <= 2) && openRoute) {
+    kind = 'fast'
+    label = '高望みしすぎない'
+    stance = '安くても上がり切る価値がある手。高打点より局消化を見ます。'
+    action = '役牌・タンヤオ・染めが残るなら鳴きも許可。孤立牌より役と形を残す。'
+  } else if (strongValueRoute) {
+    kind = 'value'
+    label = '打点を見るなら形も確認'
+    stance = '少し遅くても育てる理由があります。ただし中盤以降は危険牌を抱えすぎない。'
+    action = '打点の種を残しつつ、6巡目までに2シャンテン以下へ寄らなければ撤退も見る。'
+  } else if (tooSlowForCheap || (!earlyWindow && bestShanten >= 3)) {
+    kind = 'patient'
+    label = '無理押し注意'
+    stance = '遅くて安い寄り。上がりに寄せすぎると放銃だけ残りやすい局面です。'
+    action = '安全牌候補を残し、形が急によくなった時だけ参加。リーチには早めに受ける。'
+  } else {
+    kind = 'fast'
+    label = '決め打ちしすぎ注意'
+    stance = 'まだ決め打ちしすぎない手。速度を落とさず自然に役を見る段階です。'
+    action = '受け入れと良形を優先。次の2巡で役が見えなければリーチ手順へ寄せる。'
+  }
+
+  const yakuText = yakuHints.length > 0 ? yakuHints.join(' / ') : 'まだ薄い'
+  const reason = `${normalizedTurn}巡目(${stage.label})・${shantenLabel(bestShanten)}・受け入れ${bestImprovementTypeCount}種${bestImprovementTileCount}枚・役候補 ${yakuText}`
+  const pairWarning = pairCount >= 4 && !yakuHints.includes('七対子候補')
+    ? '対子が多いので、七対子決め打ちより順子に戻せる受けや鳴ける対子を見ます。'
+    : ''
+
+  return {
+    kind,
+    label,
+    stance,
+    reason,
+    action: `${stage.guidance}${pairWarning}${action}`,
+    shanten: bestShanten,
+    improvementTypeCount: bestImprovementTypeCount,
+    improvementTileCount: bestImprovementTileCount,
+    playerTurn: normalizedTurn,
+    yakuHints,
+  }
 }
 
 function evaluationReason(
