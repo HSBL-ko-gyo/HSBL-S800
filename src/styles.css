@@ -934,8 +934,8 @@ h1 {
   .table-board {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas:
-      "north west"
-      "east south";
+      "north east"
+      "west south";
     position: relative;
     gap: 5px;
     padding: 7px;
