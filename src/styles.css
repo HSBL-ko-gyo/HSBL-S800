@@ -986,8 +986,8 @@ h1 {
     letter-spacing: .08em;
   }
   .overview-guide {
-    color: rgba(247, 242, 228, .46);
-    background: rgba(247, 242, 228, .06);
+    color: rgba(247, 242, 228, .72);
+    background: rgba(247, 242, 228, .09);
   }
   .rail-guide {
     margin-top: 1px;
@@ -1002,7 +1002,9 @@ h1 {
     justify-content: center;
     gap: 1px;
     padding: 3px 5px 6px;
-    pointer-events: none;
+    cursor: ew-resize;
+    touch-action: none;
+    user-select: none;
   }
   .mobile-overview-window {
     position: absolute;
@@ -1043,7 +1045,6 @@ h1 {
     scrollbar-width: none;
     touch-action: none;
     overscroll-behavior-x: contain;
-    mask-image: linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 12px), transparent);
   }
   .hand.mobile-hand-rail::-webkit-scrollbar {
     display: none;

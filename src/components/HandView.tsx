@@ -33,6 +33,8 @@ export function HandView({
   onRiichiMode,
 }: HandViewProps) {
   const handRef = useRef<HTMLDivElement>(null)
+  const overviewRef = useRef<HTMLDivElement>(null)
+  const overviewPointerRef = useRef(-1)
   const gestureRef = useRef({
     pointerId: -1,
     startX: 0,
@@ -85,6 +87,43 @@ export function HandView({
     }
   }
 
+  const moveRailFromOverview = (clientX: number, overview: HTMLDivElement) => {
+    const rail = handRef.current
+    if (!rail) return
+    const rect = overview.getBoundingClientRect()
+    const visibleRatio = Math.min(1, rail.clientWidth / Math.max(rail.scrollWidth, 1))
+    const pointerRatio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    const scrollRatio = visibleRatio >= 1
+      ? 0
+      : Math.max(0, Math.min(1, (pointerRatio - visibleRatio / 2) / (1 - visibleRatio)))
+    rail.scrollLeft = scrollRatio * Math.max(0, rail.scrollWidth - rail.clientWidth)
+    syncOverviewWindow()
+    selectRailCenterTile()
+  }
+
+  const handleOverviewPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (!window.matchMedia('(max-width: 480px)').matches) return
+    if (event.pointerType === 'mouse' && event.button !== 0) return
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    overviewPointerRef.current = event.pointerId
+    moveRailFromOverview(event.clientX, event.currentTarget)
+  }
+
+  const handleOverviewPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (overviewPointerRef.current !== event.pointerId) return
+    event.preventDefault()
+    moveRailFromOverview(event.clientX, event.currentTarget)
+  }
+
+  const finishOverviewPointer = (event: PointerEvent<HTMLDivElement>) => {
+    if (overviewPointerRef.current !== event.pointerId) return
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+    overviewPointerRef.current = -1
+  }
+
   useEffect(() => {
     setSelectedTileId(null)
     setSelectedLift(0)
@@ -102,7 +141,10 @@ export function HandView({
     if (!selectedTileId) return
 
     const cancelSelection = (event: globalThis.PointerEvent) => {
-      if (handRef.current?.contains(event.target as Node)) return
+      if (
+        handRef.current?.contains(event.target as Node)
+        || overviewRef.current?.contains(event.target as Node)
+      ) return
       setSelectedTileId(null)
       setSelectedLift(0)
       tapRef.current = { tileId: null, count: 0, lastAt: 0 }
@@ -240,8 +282,16 @@ export function HandView({
       aria-label="あなたの手牌"
       style={{ '--selected-lift': `${selectedLift}px` } as CSSProperties}
     >
-      <span className="mobile-hand-guide overview-guide">全体表示・見るだけ</span>
-      <div className="mobile-hand-overview" aria-label="手牌全体">
+      <span className="mobile-hand-guide overview-guide">全体表示・ドラッグで移動</span>
+      <div
+        className="mobile-hand-overview"
+        aria-label="手牌全体。ドラッグで拡大位置を移動"
+        ref={overviewRef}
+        onPointerDown={handleOverviewPointerDown}
+        onPointerMove={handleOverviewPointerMove}
+        onPointerUp={finishOverviewPointer}
+        onPointerCancel={finishOverviewPointer}
+      >
         <span
           className="mobile-overview-window"
           aria-hidden="true"

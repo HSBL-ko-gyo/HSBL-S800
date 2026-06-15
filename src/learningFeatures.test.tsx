@@ -198,7 +198,7 @@ describe('riichi learning flow', () => {
     const overviewHtml = html.slice(overviewStart, railStart)
     const railHtml = html.slice(railStart, desktopStart)
 
-    expect(html).toContain('全体表示・見るだけ')
+    expect(html).toContain('全体表示・ドラッグで移動')
     expect(html).toContain('拡大操作・ここを横スライド')
     expect(overviewHtml.match(/mobile-overview-slot/g)).toHaveLength(14)
     expect(overviewHtml).not.toContain('<button')
