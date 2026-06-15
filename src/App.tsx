@@ -74,7 +74,13 @@ export default function App() {
         <div>
           <p className="eyebrow">SOLO SPEED MAHJONG</p>
           <div className="title-row">
-            <h1>爆速麻雀</h1>
+            <a
+              href="https://bakusoku-mahjong.hsbl-ko-gyo.com/"
+              aria-label="爆速麻雀 本番サイトへ"
+              style={{ color: 'inherit', textDecoration: 'none' }}
+            >
+              <h1>爆速麻雀</h1>
+            </a>
             <div className="mobile-round-summary" aria-label={`東一局 山残り${game.wall.length}枚`}>
               <b>東一局</b>
               <span>山 {game.wall.length}枚</span>
