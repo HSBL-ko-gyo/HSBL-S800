@@ -477,11 +477,10 @@ h1 {
 }
 
 .yaku-reading {
-  display: block;
-  margin-top: 1px;
+  margin-left: 3px;
   color: rgba(232, 200, 121, .68);
   font-family: inherit;
-  font-size: 8px;
+  font-size: .78em;
   font-weight: 700;
 }
 
@@ -794,7 +793,6 @@ h1 {
   .riichi-wait-item b { font-size: 13px; }
   .yaku-info-card { padding: 13px; }
   .yaku-info-card h4 { font-size: 15px; }
-  .yaku-reading { font-size: 9px; }
   .yaku-info-card p { font-size: 12px; line-height: 1.65; }
   .example-label,
   .example-groups small { font-size: 10px; }
@@ -863,7 +861,6 @@ h1 {
   .game-layout .yaku-info-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
   .game-layout .yaku-info-card { padding: 9px; }
   .game-layout .yaku-info-card h4 { font-size: 13px; }
-  .game-layout .yaku-reading { font-size: 8px; }
   .game-layout .yaku-info-card p { font-size: 10px; line-height: 1.5; }
   .game-layout .yaku-examples { margin-top: 5px; }
   .game-layout .yaku-example-row:not(:first-child) { display: none; }
@@ -904,7 +901,6 @@ h1 {
   .game-layout .evaluation-card p { font-size: 16px; line-height: 1.65; }
   .game-layout .yaku-info-card { padding: 12px; }
   .game-layout .yaku-info-card h4 { font-size: 17px; }
-  .game-layout .yaku-reading { font-size: 10px; }
   .game-layout .yaku-info-card p { font-size: 14px; line-height: 1.6; }
   .game-layout .example-label,
   .game-layout .example-groups small { font-size: 10px; }

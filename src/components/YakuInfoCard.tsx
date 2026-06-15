@@ -13,7 +13,7 @@ export function YakuInfoCard({ hint, hand }: YakuInfoCardProps) {
     <article className="yaku-info-card">
       <h4>
         {info.name}
-        <span className="yaku-reading">{info.reading}</span>
+        <span className="yaku-reading">({info.reading})</span>
       </h4>
       <p>{info.description} {info.condition}</p>
       <p className="yaku-current">{getYakuCurrentReason(hint, hand)}</p>
