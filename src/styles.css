@@ -1065,69 +1065,38 @@ h1 {
     overscroll-behavior-x: contain;
   }
   .discard-threshold-guide {
-    display: flex;
+    display: block;
     position: absolute;
     z-index: 6;
-    top: 7px;
-    left: 50%;
-    width: min(154px, 48vw);
-    height: 36px;
-    align-items: stretch;
-    justify-content: center;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 58px;
     pointer-events: none;
     opacity: 0;
-    transform: translate(-50%, 5px) scale(.96);
+    transform: translateY(4px);
     transition: opacity .12s, transform .12s;
   }
   .hand-zone[data-has-selected-tile="true"] .discard-threshold-guide {
     opacity: 1;
-    transform: translate(-50%, 0) scale(1);
+    transform: translateY(0);
   }
-  .discard-drop-zone {
-    display: inline-flex;
-    position: relative;
-    flex: 1;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    overflow: hidden;
-    border: 1px dashed rgba(232, 200, 121, .36);
-    border-radius: 999px;
-    background: rgba(0, 0, 0, .24);
-    color: rgba(247, 242, 228, .66);
-    box-shadow: inset 0 0 0 1px rgba(247, 242, 228, .04), 0 6px 16px rgba(0, 0, 0, .16);
+  .discard-gradient-zone {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 18px 18px 999px 999px;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(232, 200, 121, calc(.08 + var(--discard-progress, 0) * .3)), transparent 58%),
+      linear-gradient(180deg, rgba(232, 200, 121, calc(.1 + var(--discard-progress, 0) * .34)), rgba(232, 200, 121, calc(.04 + var(--discard-progress, 0) * .1)) 44%, transparent 100%);
+    box-shadow: inset 0 1px 0 rgba(247, 242, 228, calc(.08 + var(--discard-progress, 0) * .18));
+    mask-image: linear-gradient(180deg, #000 0%, #000 58%, transparent 100%);
   }
-  .discard-drop-fill {
-    position: absolute;
-    inset: auto 0 0;
-    height: calc(var(--discard-progress, 0) * 100%);
-    background: linear-gradient(180deg, rgba(232, 200, 121, .05), rgba(232, 200, 121, .24));
-    opacity: .9;
-  }
-  .discard-drop-icon,
-  .discard-drop-text {
-    position: relative;
-    z-index: 1;
-    font-weight: 700;
-  }
-  .discard-drop-icon {
-    font-size: 14px;
-    line-height: 1;
-    transform: translateY(1px);
-  }
-  .discard-drop-text {
-    font-size: 10px;
-    letter-spacing: .1em;
-  }
-  .hand-zone[data-near-discard="true"] .discard-drop-zone {
-    border-style: solid;
-    border-color: rgba(232, 200, 121, .8);
-    background: rgba(232, 200, 121, .14);
-    color: var(--gold);
-    box-shadow: inset 0 0 0 1px rgba(247, 242, 228, .08), 0 0 18px rgba(232, 200, 121, .2);
-  }
-  .hand-zone[data-near-discard="true"] .discard-drop-fill {
-    background: linear-gradient(180deg, rgba(247, 242, 228, .08), rgba(232, 200, 121, .42));
+  .hand-zone[data-near-discard="true"] .discard-gradient-zone {
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(247, 242, 228, .32), transparent 56%),
+      linear-gradient(180deg, rgba(232, 200, 121, .58), rgba(232, 200, 121, .2) 48%, transparent 100%);
+    box-shadow: inset 0 1px 0 rgba(247, 242, 228, .26), 0 -2px 18px rgba(232, 200, 121, .16);
   }
   .hand.mobile-hand-rail::-webkit-scrollbar {
     display: none;
