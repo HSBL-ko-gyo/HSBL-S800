@@ -84,6 +84,40 @@ function MeldView({ melds }: { melds: Meld[] }) {
   )
 }
 
+function ResultHandView({ hand, melds }: { hand: Tile[]; melds: Meld[] }) {
+  return (
+    <section className="result-hand" aria-label="和了形">
+      <span className="result-hand-label">和了形</span>
+      <div className="result-hand-tiles">
+        {hand.map((tile) => (
+          <TileView key={tile.id} tile={tile} usage="mini" />
+        ))}
+      </div>
+      {melds.length > 0 && (
+        <div className="result-melds" aria-label="副露">
+          {melds.map((meld, index) => (
+            <div className="result-meld" key={`${meld.type}-${index}-${meld.calledTile.id}`}>
+              <span>{meld.type === 'pon' ? 'ポン' : meld.type === 'chi' ? 'チー' : 'カン'}</span>
+              <div>
+                {meld.tiles.map((tile) => (
+                  <TileView
+                    key={tile.id}
+                    tile={tile}
+                    usage="tiny"
+                    className={tile.id === meld.calledTile.id
+                      ? `called-tile ${calledTileDirection(meld.from)}`
+                      : ''}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
 function CallDisableSwitch({
   enabled,
   onChange,
@@ -316,6 +350,9 @@ export function TableView({
           <span className="result-kicker">{game.status === 'draw' ? '牌山終了' : '練習結果'}</span>
           <h2>{game.status === 'draw' ? '流局' : game.winType === 'tsumo' ? 'ツモ' : 'ロン'}</h2>
           <p>{game.status === 'draw' ? '最後まで打ち切りました。打牌を振り返りましょう。' : '和了しました。打牌を振り返りましょう。'}</p>
+          {game.status === 'win' && (
+            <ResultHandView hand={game.winningHand ?? game.players[0].hand} melds={game.players[0].melds} />
+          )}
           {game.status === 'win' && game.roundScore && (
             <section className="score-result" aria-label="点数計算">
               {game.roundScore.limitName && (
@@ -333,6 +370,7 @@ export function TableView({
                 <span><b>{game.roundScore.fu}符</b></span>
                 {game.roundScore.limitName && <span><b>{game.roundScore.limitName}</b></span>}
               </div>
+              <span className="score-section-label">得点のもと</span>
               <div className="score-yaku-list">
                 {game.roundScore.yaku.length === 0 && <span>役なし候補</span>}
                 {game.roundScore.yaku.map((yaku) => (

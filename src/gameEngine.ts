@@ -184,6 +184,7 @@ export interface GameState {
   phase: GamePhase
   winType: 'tsumo' | 'ron' | null
   roundScore: RoundScore | null
+  winningHand: Tile[] | null
   wall: Tile[]
   players: PlayerState[]
   currentPlayer: PlayerId
@@ -1077,6 +1078,7 @@ export function createInitialGame(random: () => number = Math.random): GameState
     phase: 'player_draw',
     winType: null,
     roundScore: null,
+    winningHand: null,
     wall,
     players: players.map((player) => ({ ...player, hand: sortTiles(player.hand) })),
     currentPlayer: 0,
@@ -1107,7 +1109,7 @@ export function beginTurn(state: GameState): GameState {
     || state.phase === 'declare_reaction'
   ) return state
   if (state.wall.length === 0) {
-    return { ...state, status: 'draw', phase: 'draw', winType: null, roundScore: null, drawnTileId: null, riichiDeclareMode: false }
+    return { ...state, status: 'draw', phase: 'draw', winType: null, roundScore: null, winningHand: null, drawnTileId: null, riichiDeclareMode: false }
   }
 
   const wall = [...state.wall]
@@ -1382,10 +1384,11 @@ export function declareReaction(
 
   if (type === 'ron') {
     const restored = restoreReactionSnapshot(state, event)
-    if (!event.canRon || !isWinningHand([...restored.players[0].hand, event.tile], restored.players[0].melds.length)) {
+    const winningHand = [...restored.players[0].hand, event.tile]
+    if (!event.canRon || !isWinningHand(winningHand, restored.players[0].melds.length)) {
       return failedCall(state, type, event, 'その牌ではロンできません')
     }
-    const roundScore = calculateWinningScore([...restored.players[0].hand, event.tile], 'ron', {
+    const roundScore = calculateWinningScore(winningHand, 'ron', {
       riichi: restored.playerRiichi,
       playerWind: restored.players[0].wind,
       roundWind: ROUND_WIND,
@@ -1396,6 +1399,7 @@ export function declareReaction(
       phase: 'win',
       winType: 'ron',
       roundScore,
+      winningHand: sortTiles(winningHand),
       awaitingDiscard: false,
       pendingRonTile: null,
       pendingReactionEvents: [],
@@ -1535,6 +1539,7 @@ export function declareWin(state: GameState, type: 'tsumo' | 'ron'): GameState {
     phase: 'win',
     winType: type,
     roundScore,
+    winningHand: sortTiles(winningHand),
     awaitingDiscard: false,
     riichiDeclareMode: false,
     pendingRonTile: null,

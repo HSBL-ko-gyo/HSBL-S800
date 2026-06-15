@@ -184,6 +184,8 @@ describe('riichi learning flow', () => {
     const won = declareReaction(declaring, 'ron', declaring.pendingReactionEvents[0].id)
     expect(won.status).toBe('win')
     expect(won.winType).toBe('ron')
+    expect(won.winningHand).toHaveLength(14)
+    expect(won.winningHand?.filter((tile) => tile.code === '5m')).toHaveLength(2)
   })
 
   it('shows post-discard feedback when a normal discard could have declared riichi', () => {
@@ -288,8 +290,10 @@ describe('riichi learning flow', () => {
     const html = renderTable(state)
 
     expect(html).toContain('win-celebration')
+    expect(html).toContain('result-hand')
     expect(html).toContain('score-result')
     expect(html).toContain('score-limit-banner')
+    expect(html).toContain('score-section-label')
     expect(html).toContain('跳満')
     expect(html).toContain('親ツモ 6000点オール')
     expect(html).toContain('18,000点')
