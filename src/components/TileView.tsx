@@ -6,6 +6,9 @@ const NUMBER_READINGS = ['', 'イー', 'リャン', 'サン', 'スー', 'ウー'
 const HONORS: Partial<Record<TileCode, string>> = {
   E: '東', S: '南', W: '西', N: '北', F: '發', C: '中',
 }
+const HONOR_READINGS: Partial<Record<TileCode, string>> = {
+  E: 'トン', S: 'ナン', W: 'シャー', N: 'ペー', P: 'ハク', F: 'ハツ', C: 'チュン',
+}
 
 export type TileVisualState = 'picked-right' | 'picked-wrong' | 'dim' | 'static'
 
@@ -19,24 +22,29 @@ interface TileViewProps {
 }
 
 function tileContent(code: TileCode) {
-  if (code === 'P') return <span className="haku" />
+  const honorReading = HONOR_READINGS[code]
+  const reading = honorReading
+    ? <span className="tile-reading" aria-hidden="true">{honorReading}</span>
+    : null
+
+  if (code === 'P') return <>{reading}<span className="haku" /></>
 
   const honor = HONORS[code]
   if (honor) {
     const colorClass = code === 'C' ? 'chun' : code === 'F' ? 'hatsu' : ''
-    return <span className={`honor ${colorClass}`}>{honor}</span>
+    return <>{reading}<span className={`honor ${colorClass}`}>{honor}</span></>
   }
 
   const number = Number(code[0])
   const suit = code[1]
-  const reading = <span className="tile-reading" aria-hidden="true">{NUMBER_READINGS[number]}</span>
+  const numberReading = <span className="tile-reading" aria-hidden="true">{NUMBER_READINGS[number]}</span>
   if (suit === 'm') {
-    return <>{reading}<span className="num">{KANJI[number]}</span><span className="suit">萬</span></>
+    return <>{numberReading}<span className="num">{KANJI[number]}</span><span className="suit">萬</span></>
   }
   if (suit === 'p') {
-    return <>{reading}<span className="num">{number}</span><span className="suit">筒</span></>
+    return <>{numberReading}<span className="num">{number}</span><span className="suit">筒</span></>
   }
-  return <>{reading}<span className="num">{number}</span><span className="suit">索</span></>
+  return <>{numberReading}<span className="num">{number}</span><span className="suit">索</span></>
 }
 
 export function TileView({

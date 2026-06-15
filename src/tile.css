@@ -54,14 +54,14 @@ button.tile:active {
 
 .tile .tile-reading {
   position: absolute;
-  top: calc(var(--tile-width) * .1);
+  top: calc(var(--tile-width) * .08);
   left: 50%;
   max-width: calc(var(--tile-width) * .9);
   overflow: hidden;
   transform: translateX(-50%);
   color: rgba(42, 36, 28, .52);
   font-family: system-ui, sans-serif;
-  font-size: clamp(5px, calc(var(--tile-width) * .13), 7px);
+  font-size: clamp(6px, calc(var(--tile-width) * .17), 10px);
   font-weight: 800;
   letter-spacing: 0;
   line-height: 1;

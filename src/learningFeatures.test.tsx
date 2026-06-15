@@ -482,11 +482,13 @@ describe('tile usage classes', () => {
   it('assigns explicit hand, river, and tiny classes without mixing variants', () => {
     const tile = createTile('5m', 'usage')
     const handHtml = renderToStaticMarkup(<TileView tile={tile} usage="hand" onClick={() => undefined} />)
+    const honorHtml = renderToStaticMarkup(<TileView tile={createTile('E', 'usage-honor')} usage="hand" />)
     const riverHtml = renderToStaticMarkup(<TileView tile={tile} usage="river" />)
     const tinyHtml = renderToStaticMarkup(<TileView tile={tile} usage="tiny" />)
     expect(handHtml).toContain('tile man hand')
     expect(handHtml).toContain('tile-reading')
     expect(handHtml).toContain('ウー')
+    expect(honorHtml).toContain('トン')
     expect(riverHtml).toContain('tile man river')
     expect(riverHtml).not.toContain(' mini')
     expect(tinyHtml).toContain('tile man tiny')
