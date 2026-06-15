@@ -711,11 +711,15 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px 14px;
+  gap: 9px 18px;
   flex-wrap: wrap;
-  margin-top: 18px;
-  color: rgba(247, 242, 228, .38);
-  font-size: 10px;
+  margin-top: 22px;
+  padding: 13px 18px;
+  border: 1px solid rgba(232, 200, 121, .22);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, .13);
+  color: rgba(247, 242, 228, .62);
+  font-size: 11px;
   letter-spacing: .06em;
   text-align: center;
 }
@@ -727,14 +731,19 @@ h1 {
 }
 
 .app-footer a {
-  color: rgba(232, 200, 121, .58);
+  padding: 4px 7px;
+  border-radius: 7px;
+  color: rgba(232, 200, 121, .9);
+  font-size: 12px;
+  font-weight: 700;
   text-decoration: none;
-  transition: color .15s;
+  transition: color .15s, background .15s;
 }
 
 .app-footer a:hover,
 .app-footer a:focus-visible {
   color: var(--gold);
+  background: rgba(232, 200, 121, .1);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -947,6 +956,18 @@ h1 {
   .river { grid-template-columns: repeat(6, 21px); gap: 3px 2px; min-height: 58px; }
   .tile.river { --tile-width: 21px; }
   .table-center { display: none; }
+  .app-footer {
+    gap: 8px;
+    margin-top: 16px;
+    padding: 12px 10px;
+    font-size: 10px;
+  }
+  .footer-links {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .app-footer a { font-size: 11px; }
   .hand-zone { margin-top: 7px; }
   .hand {
     min-height: 82px;
