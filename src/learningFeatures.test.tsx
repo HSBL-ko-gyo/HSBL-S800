@@ -287,6 +287,7 @@ describe('riichi learning flow', () => {
     }
     const html = renderTable(state)
 
+    expect(html).toContain('win-celebration')
     expect(html).toContain('score-result')
     expect(html).toContain('親ツモ 2600点オール')
     expect(html).toContain('7,800点')

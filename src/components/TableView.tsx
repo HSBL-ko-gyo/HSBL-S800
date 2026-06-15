@@ -301,8 +301,18 @@ export function TableView({
         />
       </div>
 
+      {game.status === 'win' && (
+        <div className="win-celebration" aria-hidden="true">
+          {Array.from({ length: 32 }, (_, index) => <span key={index} />)}
+        </div>
+      )}
+
       {game.status !== 'playing' && (
-        <section className="round-result" role="dialog" aria-label={game.status === 'draw' ? '流局' : '和了'}>
+        <section
+          className={`round-result ${game.status === 'win' ? 'is-win-result' : 'is-draw-result'}`}
+          role="dialog"
+          aria-label={game.status === 'draw' ? '流局' : '和了'}
+        >
           <span className="result-kicker">{game.status === 'draw' ? '牌山終了' : '練習結果'}</span>
           <h2>{game.status === 'draw' ? '流局' : game.winType === 'tsumo' ? 'ツモ' : 'ロン'}</h2>
           <p>{game.status === 'draw' ? '最後まで打ち切りました。打牌を振り返りましょう。' : '和了しました。打牌を振り返りましょう。'}</p>
