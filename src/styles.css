@@ -78,6 +78,10 @@ h1 {
   min-width: 0;
 }
 
+.play-column {
+  position: relative;
+}
+
 .table-board {
   display: grid;
   grid-template-columns: minmax(210px, 1fr) minmax(190px, .9fr) minmax(210px, 1fr);
@@ -254,6 +258,10 @@ h1 {
   margin-left: clamp(5px, 1.2vw, 13px);
 }
 
+.desktop-hand .tile.drawn {
+  margin-left: 0;
+}
+
 .block-count-guide {
   align-items: center;
   justify-content: center;
@@ -281,6 +289,26 @@ h1 {
 }
 
 .block-count-guide span { color: var(--gold); }
+
+.block-count-guide span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.block-count-guide strong {
+  color: var(--gold);
+  font-size: 11px;
+}
+
+.block-count-guide em {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(247, 242, 228, .1);
+  color: var(--ivory);
+  font-size: 10px;
+  font-style: normal;
+}
 
 .block-count-guide small {
   color: rgba(247, 242, 228, .52);
@@ -1072,8 +1100,6 @@ h1 {
 }
 
 @media (min-width: 781px) {
-  .play-column { position: relative; }
-
   .play-column .reaction-panel {
     position: absolute;
     z-index: 6;
@@ -1317,10 +1343,11 @@ h1 {
   .app-footer a { font-size: 11px; }
   .hand-zone { margin-top: 7px; }
   .side-call-toggle {
-    left: 4px;
-    top: 42%;
+    left: 2px;
+    top: 76px;
     min-width: 42px;
     padding: 7px 4px;
+    transform: none;
     font-size: 9px;
   }
   .side-call-toggle input {
@@ -1440,7 +1467,7 @@ h1 {
     grid-template-columns: repeat(14, minmax(0, 1fr));
     width: calc(100vw - 48px);
     min-height: 15px;
-    margin: -3px auto 1px;
+  margin: -3px auto 1px;
     gap: 1px;
     padding: 0 5px;
     pointer-events: none;
@@ -1459,6 +1486,16 @@ h1 {
     position: relative;
     width: var(--rail-width);
     margin: 0 auto;
+  }
+  .mobile-block-count-guide span {
+    gap: 5px;
+  }
+  .mobile-block-count-guide strong,
+  .mobile-block-count-guide em {
+    font-size: 9px;
+  }
+  .mobile-block-count-guide em {
+    padding: 1px 5px;
   }
   .hand.mobile-hand-rail {
     display: flex;

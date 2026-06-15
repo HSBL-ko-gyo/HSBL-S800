@@ -25,7 +25,8 @@ interface HandBlockSegment {
 
 interface BlockTactic {
   tone: 'shortage' | 'ready' | 'overflow'
-  label: string
+  countLabel: string
+  statusLabel: string
   detail: string
 }
 
@@ -135,20 +136,23 @@ function getBlockTactic(blocks: HandBlock[]): BlockTactic {
   if (count >= 6) {
     return {
       tone: 'overflow',
-      label: `${count}ブロック過多`,
+      countLabel: `${count}ブロック`,
+      statusLabel: '過多',
       detail: '弱いターツか役に絡みにくい対子を整理',
     }
   }
   if (count === 5) {
     return {
       tone: 'ready',
-      label: '5ブロック適正',
+      countLabel: '5ブロック',
+      statusLabel: '適正',
       detail: 'ブロックを壊さず良形化',
     }
   }
   return {
     tone: 'shortage',
-    label: `${count}ブロック不足`,
+    countLabel: `${count}ブロック`,
+    statusLabel: '不足',
     detail: '浮き牌から新しいターツを作る',
   }
 }
@@ -474,11 +478,6 @@ export function HandView({
           </span>
         ))}
       </div>
-      <div className={`mobile-block-count-guide block-count-guide block-count-${blockTactic.tone}`}>
-        <b>5ブロック打法</b>
-        <span>{blockTactic.label}</span>
-        <small>{blockTactic.detail}</small>
-      </div>
       <div className="mobile-block-guide" aria-label={`ブロック補助: ${blockSummary}`}>
         {handBlockSegments.map((block) => (
           <span
@@ -489,6 +488,11 @@ export function HandView({
             {block.label}
           </span>
         ))}
+      </div>
+      <div className={`mobile-block-count-guide block-count-guide block-count-${blockTactic.tone}`}>
+        <b>5ブロック打法</b>
+        <span><strong>{blockTactic.countLabel}</strong><em>{blockTactic.statusLabel}</em></span>
+        <small>{blockTactic.detail}</small>
       </div>
       <span className="mobile-hand-guide rail-guide">拡大操作・ここを横スライド</span>
       <div className="mobile-hand-control">
@@ -537,11 +541,6 @@ export function HandView({
           </span>
         ))}
       </div>
-      <div className={`desktop-block-count-guide block-count-guide block-count-${blockTactic.tone}`}>
-        <b>5ブロック打法</b>
-        <span>{blockTactic.label}</span>
-        <small>{blockTactic.detail}</small>
-      </div>
       <div className="desktop-block-guide" aria-label={`ブロック補助: ${blockSummary}`}>
         {handBlockSegments.map((block) => (
           <span
@@ -552,6 +551,11 @@ export function HandView({
             {block.label}
           </span>
         ))}
+      </div>
+      <div className={`desktop-block-count-guide block-count-guide block-count-${blockTactic.tone}`}>
+        <b>5ブロック打法</b>
+        <span><strong>{blockTactic.countLabel}</strong><em>{blockTactic.statusLabel}</em></span>
+        <small>{blockTactic.detail}</small>
       </div>
       <span className="hand-scroll-hint">
         {selectedTileId
