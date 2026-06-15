@@ -818,34 +818,33 @@ h1 {
 .side-call-toggle {
   position: absolute;
   z-index: 7;
-  left: -18px;
-  top: 50%;
+  left: 18px;
+  bottom: 20px;
   display: inline-flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 7px;
-  min-width: 54px;
-  padding: 10px 6px;
-  transform: translateY(-50%);
+  gap: 8px;
+  min-width: 0;
+  padding: 7px 10px;
   border: 1px solid rgba(247, 242, 228, .18);
   border-radius: 999px;
   background: rgba(8, 35, 28, .92);
-  box-shadow: 0 10px 26px rgba(0, 0, 0, .34);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .28);
   color: rgba(247, 242, 228, .72);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 900;
   line-height: 1.15;
   text-align: center;
   user-select: none;
-  writing-mode: vertical-rl;
+  writing-mode: horizontal-tb;
 }
 
 .side-call-toggle input {
   appearance: none;
   display: inline-grid;
-  width: 22px;
-  height: 38px;
+  width: 34px;
+  height: 20px;
   align-items: center;
   justify-items: center;
   padding: 2px;
@@ -871,7 +870,7 @@ h1 {
 }
 
 .side-call-toggle input:checked::before {
-  transform: translateY(16px);
+  transform: translateX(14px);
   background: var(--gold);
 }
 
