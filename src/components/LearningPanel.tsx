@@ -37,6 +37,9 @@ export function LearningPanel({
         <span>受け入れ: <b>{improvementTypeCount}種{improvementTileCount}枚</b></span>
       </div>
 
+      <DiscardEvaluationPanel evaluation={evaluation} />
+      <RiichiWaitPanel waits={riichiWaits} />
+
       <section className="yaku-hints">
         <span className="learning-label">狙える役</span>
         <div className="hint-chips">
@@ -46,8 +49,6 @@ export function LearningPanel({
         </div>
       </section>
 
-      <DiscardEvaluationPanel evaluation={evaluation} />
-      <RiichiWaitPanel waits={riichiWaits} />
       <YakuInfoPanel hints={yakuHints} hand={hand} />
 
       {feedback && <p className="feedback-message" role="status">{feedback}</p>}

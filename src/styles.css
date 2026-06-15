@@ -922,30 +922,37 @@ h1 {
   .table-board {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas:
-      "north center"
-      "west east"
-      "south south";
-    gap: 6px;
-    padding: 8px;
+      "north west"
+      "east south";
+    position: relative;
+    gap: 5px;
+    padding: 7px;
   }
-  .player-label { gap: 5px; margin-bottom: 7px; }
+  .river-panel { min-height: 92px; padding: 6px; }
+  .player-label { gap: 4px; margin-bottom: 4px; font-size: 10px; }
+  .wind-badge { width: 22px; height: 22px; font-size: 12px; }
   .hand-count { display: none; }
-  .river { grid-template-columns: repeat(6, 23px); min-height: 56px; }
-  .tile.river { --tile-width: 23px; }
+  .river { grid-template-columns: repeat(6, 21px); gap: 3px 2px; min-height: 58px; }
+  .tile.river { --tile-width: 21px; }
   .table-center {
-    width: 106px;
-    height: 100%;
-    min-height: 94px;
+    position: absolute;
+    z-index: 5;
+    top: 50%;
+    left: 50%;
+    width: 72px;
+    height: 72px;
+    min-height: 0;
     aspect-ratio: auto;
     margin: 0;
-    justify-self: end;
-    border-radius: 13px;
+    border-radius: 11px;
+    transform: translate(-50%, -50%);
   }
-  .round-label { font-size: 9px; }
-  .table-center strong { min-height: 18px; margin: 3px 0; font-size: 12px; }
-  .wall-counter { font-size: 9px; }
-  .wall-counter b { font-size: 21px; }
-  .table-center small { margin-top: 4px; font-size: 8px; }
+  .round-label { font-size: 7px; letter-spacing: .08em; }
+  .table-center strong { min-height: 13px; margin: 2px 0; font-size: 9px; }
+  .riichi-status { margin-bottom: 2px; padding: 1px 5px; font-size: 7px; }
+  .wall-counter { gap: 2px; font-size: 7px; }
+  .wall-counter b { font-size: 16px; }
+  .table-center small { margin-top: 2px; font-size: 6px; }
   .hand-zone { margin-top: 7px; }
   .hand {
     min-height: 82px;
