@@ -72,12 +72,12 @@ button.tile:active {
 
 .tile .tile-suit-reading {
   position: absolute;
-  bottom: calc(var(--tile-width) * .12);
+  bottom: calc(var(--tile-width) * .06);
   left: 50%;
   max-width: calc(var(--tile-width) * .86);
   overflow: hidden;
   transform: translateX(-50%);
-  color: rgba(42, 36, 28, .45);
+  color: rgba(42, 36, 28, .62);
   font-family: system-ui, sans-serif;
   font-size: clamp(6px, calc(var(--tile-width) * .15), 9px);
   font-weight: 800;
