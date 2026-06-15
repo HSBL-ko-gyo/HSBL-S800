@@ -279,19 +279,21 @@ describe('riichi learning flow', () => {
       playerRiichi: true,
       roundScore: calculateWinningScore([
         '2m', '3m', '4m',
+        '2p', '3p', '4p',
+        '2s', '3s', '4s',
         '6m', '7m', '8m',
-        '3p', '4p', '5p',
-        '4s', '5s', '6s',
-        '2s', '2s',
+        '5s', '5s',
       ], 'tsumo', { riichi: true }),
     }
     const html = renderTable(state)
 
     expect(html).toContain('win-celebration')
     expect(html).toContain('score-result')
-    expect(html).toContain('親ツモ 2600点オール')
-    expect(html).toContain('7,800点')
-    expect(html).toContain('4飜')
+    expect(html).toContain('score-limit-banner')
+    expect(html).toContain('跳満')
+    expect(html).toContain('親ツモ 6000点オール')
+    expect(html).toContain('18,000点')
+    expect(html).toContain('6飜')
     expect(html).toContain('20符')
   })
 

@@ -318,6 +318,12 @@ export function TableView({
           <p>{game.status === 'draw' ? '最後まで打ち切りました。打牌を振り返りましょう。' : '和了しました。打牌を振り返りましょう。'}</p>
           {game.status === 'win' && game.roundScore && (
             <section className="score-result" aria-label="点数計算">
+              {game.roundScore.limitName && (
+                <div className="score-limit-banner">
+                  <span>{game.roundScore.limitName}</span>
+                  <small>{game.roundScore.han}飜 {game.roundScore.fu}符</small>
+                </div>
+              )}
               <div className="score-main">
                 <span>{game.roundScore.paymentText}</span>
                 <strong>{game.roundScore.totalPoints.toLocaleString()}点</strong>

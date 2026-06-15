@@ -1154,6 +1154,39 @@ h1 {
   text-align: left;
 }
 
+.score-limit-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 11px;
+  padding: 9px 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 238, 171, .54);
+  border-radius: 10px;
+  background:
+    linear-gradient(90deg, rgba(255, 238, 171, .23), rgba(232, 200, 121, .08) 58%, rgba(255, 238, 171, .2)),
+    rgba(0, 0, 0, .13);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .1),
+    0 0 18px rgba(232, 200, 121, .14);
+}
+
+.score-limit-banner span {
+  color: #fff3b0;
+  font-family: 'Shippori Mincho B1', serif;
+  font-size: clamp(26px, 5vw, 40px);
+  line-height: 1;
+  text-shadow: 0 0 14px rgba(255, 233, 139, .46);
+}
+
+.score-limit-banner small {
+  flex: 0 0 auto;
+  color: rgba(247, 242, 228, .68);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .score-main {
   display: flex;
   align-items: baseline;

@@ -21,6 +21,13 @@ const simplePinfuTsumo: TileCode[] = [
   '4s', '5s', '6s',
   '2s', '2s',
 ]
+const manganTsumo: TileCode[] = [
+  '2m', '3m', '4m',
+  '2p', '3p', '4p',
+  '2s', '3s', '4s',
+  '6m', '7m', '8m',
+  '5s', '5s',
+]
 
 describe('game engine', () => {
   it('creates four copies of every tile', () => {
@@ -43,6 +50,14 @@ describe('game engine', () => {
     expect(score.totalPoints).toBe(7800)
     expect(score.paymentText).toBe('親ツモ 2600点オール')
     expect(score.yaku.map((yaku) => yaku.name)).toEqual(['立直', '門前清自摸和', '断么九', '平和'])
+  })
+
+  it('labels limit hands such as mangan', () => {
+    const score = calculateWinningScore(manganTsumo, 'tsumo')
+    expect(score.han).toBe(5)
+    expect(score.fu).toBe(20)
+    expect(score.limitName).toBe('満貫')
+    expect(score.paymentText).toBe('親ツモ 4000点オール')
   })
 
   it('stores the calculated score when declaring tsumo', () => {
