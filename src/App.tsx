@@ -73,8 +73,13 @@ export default function App() {
         onRestart={() => setGame(newGame())}
       />
 
-      <footer>
-        鳴き・点数計算なし / クリックまたはタップで打牌
+      <footer className="app-footer">
+        <span>鳴き・点数計算なし / クリックまたはタップで打牌</span>
+        <span className="footer-links">
+          <a href="https://hsbl-ko-gyo.github.io/mahjong-bootcamp/" target="_blank" rel="noreferrer">麻雀ブートキャンプ</a>
+          <span aria-hidden="true">・</span>
+          <a href="https://hsbl-ko-gyo.github.io/mahjong-bootcamp/" target="_blank" rel="noreferrer">制作：ハシビロ工業</a>
+        </span>
       </footer>
     </div>
   )

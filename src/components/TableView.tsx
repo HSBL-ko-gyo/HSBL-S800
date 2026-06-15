@@ -67,61 +67,65 @@ export function TableView({
 
   return (
     <>
-      <main className="table-board">
-        {[2, 3, 1, 0].map((playerIndex) => {
-          const player = game.players[playerIndex]
-          const lastDiscardId = game.lastDiscard?.playerIndex === playerIndex
-            ? game.lastDiscard.tileId
-            : undefined
-          return (
-            <RiverView
-              key={player.wind}
-              player={player}
-              seat={SEATS[playerIndex]}
-              active={game.status === 'playing' && game.currentPlayer === playerIndex}
-              lastDiscardId={lastDiscardId}
-            />
-          )
-        })}
+      <div className="game-layout">
+        <div className="play-column">
+          <main className="table-board">
+            {[2, 3, 1, 0].map((playerIndex) => {
+              const player = game.players[playerIndex]
+              const lastDiscardId = game.lastDiscard?.playerIndex === playerIndex
+                ? game.lastDiscard.tileId
+                : undefined
+              return (
+                <RiverView
+                  key={player.wind}
+                  player={player}
+                  seat={SEATS[playerIndex]}
+                  active={game.status === 'playing' && game.currentPlayer === playerIndex}
+                  lastDiscardId={lastDiscardId}
+                />
+              )
+            })}
 
-        <section className="table-center" aria-live="polite">
-          <span className="round-label">東一局</span>
-          <strong>{statusText}</strong>
-          {game.playerRiichi && <span className="riichi-status">立直</span>}
-          <div className="wall-counter">
-            <span>山</span>
-            <b>{game.wall.length}</b>
-            <span>枚</span>
-          </div>
-          <small>{game.turnNumber} 打牌</small>
-        </section>
-      </main>
+            <section className="table-center" aria-live="polite">
+              <span className="round-label">東一局</span>
+              <strong>{statusText}</strong>
+              {game.playerRiichi && <span className="riichi-status">立直</span>}
+              <div className="wall-counter">
+                <span>山</span>
+                <b>{game.wall.length}</b>
+                <span>枚</span>
+              </div>
+              <small>{game.turnNumber} 打牌</small>
+            </section>
+          </main>
 
-      <HandView
-        tiles={game.players[0].hand}
-        drawnTileId={game.drawnTileId}
-        canDiscard={freeDiscard}
-        canRon={Boolean(game.pendingRonTile)}
-        canTsumo={canTsumo}
-        hint={handHint}
-        onDiscard={onDiscard}
-        onRon={onRon}
-        onTsumo={onTsumo}
-      />
+          <HandView
+            tiles={game.players[0].hand}
+            drawnTileId={game.drawnTileId}
+            canDiscard={freeDiscard}
+            canRon={Boolean(game.pendingRonTile)}
+            canTsumo={canTsumo}
+            hint={handHint}
+            onDiscard={onDiscard}
+            onRon={onRon}
+            onTsumo={onTsumo}
+          />
+        </div>
 
-      <LearningPanel
-        shanten={baselineShanten}
-        improvementTypeCount={baselineWaits.length}
-        improvementTileCount={baselineWaits.reduce((sum, tile) => sum + tile.remaining, 0)}
-        yakuHints={yakuHints}
-        hand={game.players[0].hand}
-        evaluation={game.lastEvaluation}
-        riichiWaits={riichiWaits}
-        feedback={game.lastFeedback}
-        showRiichiButton={humanTurn && !game.playerRiichi}
-        riichiDeclareMode={game.riichiDeclareMode}
-        onRiichiMode={onRiichiMode}
-      />
+        <LearningPanel
+          shanten={baselineShanten}
+          improvementTypeCount={baselineWaits.length}
+          improvementTileCount={baselineWaits.reduce((sum, tile) => sum + tile.remaining, 0)}
+          yakuHints={yakuHints}
+          hand={game.players[0].hand}
+          evaluation={game.lastEvaluation}
+          riichiWaits={riichiWaits}
+          feedback={game.lastFeedback}
+          showRiichiButton={humanTurn && !game.playerRiichi}
+          riichiDeclareMode={game.riichiDeclareMode}
+          onRiichiMode={onRiichiMode}
+        />
+      </div>
 
       {game.status !== 'playing' && (
         <section className="round-result" role="dialog" aria-label={game.status === 'draw' ? '流局' : '和了'}>
