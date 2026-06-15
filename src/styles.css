@@ -233,6 +233,7 @@ h1 {
 }
 
 .mobile-hand-overview,
+.mobile-hand-guide,
 .hand.mobile-hand-rail { display: none; }
 
 .hand {
@@ -973,6 +974,26 @@ h1 {
   .app-footer a { font-size: 11px; }
   .hand-zone { margin-top: 7px; }
   .desktop-hand { display: none; }
+  .mobile-hand-guide {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 14px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .08em;
+  }
+  .overview-guide {
+    color: rgba(247, 242, 228, .46);
+    background: rgba(247, 242, 228, .06);
+  }
+  .rail-guide {
+    margin-top: 1px;
+    color: var(--gold);
+    background: rgba(232, 200, 121, .12);
+  }
   .mobile-hand-overview {
     display: flex;
     min-height: 40px;
@@ -995,25 +1016,41 @@ h1 {
     box-shadow: 0 calc(var(--tile-width) * .09) 0 var(--amber), 0 0 0 1px var(--gold), 0 calc(var(--tile-width) * .13) calc(var(--tile-width) * .18) rgba(0, 0, 0, .45);
   }
   .hand.mobile-hand-rail {
+    --rail-width: min(356px, calc(100vw - 34px));
+    --rail-tile-width: 40px;
+    --rail-gap: 2px;
+    --rail-span: calc(var(--rail-tile-width) + var(--rail-gap));
+    --rail-track-width: 586px;
+    --rail-max-offset: calc(var(--rail-track-width) - var(--rail-width));
+    --rail-center-offset: calc((var(--rail-width) - var(--rail-tile-width)) / 2);
     display: flex;
-    width: min(310px, calc(100vw - 34px));
-    min-height: 70px;
+    position: relative;
+    width: var(--rail-width);
+    min-height: 106px;
     margin: 0 auto;
-    justify-content: center;
-    gap: 6px;
-    padding: 5px 8px 11px;
-    overflow: visible;
+    padding: 42px 0 10px;
+    overflow: hidden;
     touch-action: none;
+  }
+  .mobile-hand-track {
+    position: absolute;
+    left: 0;
+    bottom: 10px;
+    display: flex;
+    gap: var(--rail-gap);
+    width: var(--rail-track-width);
+    transform: translateX(clamp(calc(var(--rail-max-offset) * -1), calc(var(--rail-center-offset) - var(--rail-focus-index) * var(--rail-span)), 0px));
+    transition: transform .08s ease-out;
   }
   .mobile-hand-rail .hand-tile-slot {
     display: flex;
-    width: 45px;
-    flex: 0 0 45px;
+    width: var(--rail-tile-width);
+    flex: 0 0 var(--rail-tile-width);
     align-self: flex-end;
     justify-content: center;
   }
   .mobile-hand-rail .tile.hand {
-    --tile-width: 45px;
+    --tile-width: var(--rail-tile-width);
     z-index: 1;
   }
   .mobile-hand-rail .tile.hand:not(.selected):hover,

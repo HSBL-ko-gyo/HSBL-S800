@@ -180,7 +180,7 @@ describe('riichi learning flow', () => {
     expect(html).toContain('リーチ宣言')
   })
 
-  it('renders a static 14-tile overview and a five-tile mobile control rail', () => {
+  it('renders a static 14-tile overview and a connected 14-tile mobile control rail', () => {
     const state = gameWithHand([...tenpaiBase, 'E'])
     const html = renderToStaticMarkup(
       <TableView
@@ -198,9 +198,11 @@ describe('riichi learning flow', () => {
     const overviewHtml = html.slice(overviewStart, railStart)
     const railHtml = html.slice(railStart, desktopStart)
 
+    expect(html).toContain('全体表示・見るだけ')
+    expect(html).toContain('拡大操作・ここを横スライド')
     expect(overviewHtml.match(/mobile-overview-slot/g)).toHaveLength(14)
     expect(overviewHtml).not.toContain('<button')
-    expect(railHtml.match(/hand-tile-slot/g)).toHaveLength(5)
+    expect(railHtml.match(/hand-tile-slot/g)).toHaveLength(14)
   })
 
   it('shows waits after riichi without showing a duplicated missed-riichi message', () => {

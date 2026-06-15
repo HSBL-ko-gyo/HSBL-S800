@@ -53,11 +53,6 @@ export function HandView({
   const mobileFocusIndex = selectedIndex >= 0
     ? selectedIndex
     : Math.max(0, displayed.length - 1)
-  const mobileWindowStart = Math.max(0, Math.min(
-    mobileFocusIndex - 2,
-    Math.max(0, displayed.length - 5),
-  ))
-  const mobileTiles = displayed.slice(mobileWindowStart, mobileWindowStart + 5)
 
   useEffect(() => {
     setSelectedTileId(null)
@@ -198,6 +193,7 @@ export function HandView({
       aria-label="あなたの手牌"
       style={{ '--selected-lift': `${selectedLift}px` } as CSSProperties}
     >
+      <span className="mobile-hand-guide overview-guide">全体表示・見るだけ</span>
       <div className="mobile-hand-overview" aria-label="手牌全体">
         {displayed.map((tile) => (
           <span className="mobile-overview-slot" key={`overview-${tile.id}`}>
@@ -209,29 +205,33 @@ export function HandView({
           </span>
         ))}
       </div>
+      <span className="mobile-hand-guide rail-guide">拡大操作・ここを横スライド</span>
       <div
         className={`hand mobile-hand-rail ${canDiscard ? 'is-active' : ''}`}
         ref={handRef}
+        style={{ '--rail-focus-index': mobileFocusIndex } as CSSProperties}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={finishGesture}
         onPointerCancel={cancelGesture}
       >
-        {mobileTiles.map((tile) => (
-          <span className="hand-tile-slot" data-hand-tile-id={tile.id} key={tile.id}>
-            <TileView
-              tile={tile}
-              usage="hand"
-              className={[
-                tile.id === drawnTileId ? 'drawn' : '',
-                tile.id === selectedTileId ? 'selected' : '',
-              ].filter(Boolean).join(' ')}
-              visualState={canDiscard ? undefined : 'static'}
-              disabled={!canDiscard}
-              onClick={canDiscard ? handleTileClick : undefined}
-            />
-          </span>
-        ))}
+        <div className="mobile-hand-track">
+          {displayed.map((tile) => (
+            <span className="hand-tile-slot" data-hand-tile-id={tile.id} key={tile.id}>
+              <TileView
+                tile={tile}
+                usage="hand"
+                className={[
+                  tile.id === drawnTileId ? 'drawn' : '',
+                  tile.id === selectedTileId ? 'selected' : '',
+                ].filter(Boolean).join(' ')}
+                visualState={canDiscard ? undefined : 'static'}
+                disabled={!canDiscard}
+                onClick={canDiscard ? handleTileClick : undefined}
+              />
+            </span>
+          ))}
+        </div>
       </div>
       <div className={`hand desktop-hand ${canDiscard ? 'is-active' : ''}`}>
         {displayed.map((tile) => (
