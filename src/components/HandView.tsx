@@ -31,6 +31,7 @@ export function HandView({
     pointerId: -1,
     startY: 0,
     selectedTileId: null as string | null,
+    verticalLocked: false,
   })
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null)
   const [selectedLift, setSelectedLift] = useState(0)
@@ -90,6 +91,7 @@ export function HandView({
       pointerId: event.pointerId,
       startY: event.clientY,
       selectedTileId: tileId,
+      verticalLocked: false,
     }
     setSelectedTileId(tileId)
     setSelectedLift(0)
@@ -100,13 +102,17 @@ export function HandView({
     if (gesture.pointerId !== event.pointerId) return
     event.preventDefault()
 
-    const hoveredTileId = tileIdAtX(event.clientX)
-    if (hoveredTileId && hoveredTileId !== gesture.selectedTileId) {
-      gesture.selectedTileId = hoveredTileId
-      setSelectedTileId(hoveredTileId)
+    const upwardDistance = Math.max(0, gesture.startY - event.clientY)
+    if (upwardDistance >= 10) gesture.verticalLocked = true
+
+    if (!gesture.verticalLocked) {
+      const hoveredTileId = tileIdAtX(event.clientX)
+      if (hoveredTileId && hoveredTileId !== gesture.selectedTileId) {
+        gesture.selectedTileId = hoveredTileId
+        setSelectedTileId(hoveredTileId)
+      }
     }
 
-    const upwardDistance = Math.max(0, gesture.startY - event.clientY)
     setSelectedLift(Math.min(upwardDistance, 42))
 
     if (upwardDistance >= 48) {
@@ -129,12 +135,14 @@ export function HandView({
     }
 
     gesture.pointerId = -1
+    gesture.verticalLocked = false
     setSelectedLift(0)
   }
 
   const cancelGesture = (event: PointerEvent<HTMLDivElement>) => {
     if (gestureRef.current.pointerId !== event.pointerId) return
     gestureRef.current.pointerId = -1
+    gestureRef.current.verticalLocked = false
     setSelectedLift(0)
   }
 
