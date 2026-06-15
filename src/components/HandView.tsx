@@ -37,27 +37,65 @@ export function HandView({
     pointerId: -1,
     startX: 0,
     startY: 0,
-    startTileIndex: -1,
+    startScrollLeft: 0,
     selectedTileId: null as string | null,
     selectedAtPointerDown: false,
     moved: false,
+    horizontalLocked: false,
     verticalLocked: false,
   })
   const tapRef = useRef({ tileId: null as string | null, count: 0, lastAt: 0 })
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null)
   const [selectedLift, setSelectedLift] = useState(0)
+  const [overviewWindow, setOverviewWindow] = useState({ left: 0, width: 60 })
   const drawnTile = tiles.find((tile) => tile.id === drawnTileId)
   const concealed = sortTiles(tiles.filter((tile) => tile.id !== drawnTileId))
   const displayed = drawnTile ? [...concealed, drawnTile] : concealed
-  const selectedIndex = displayed.findIndex((tile) => tile.id === selectedTileId)
-  const mobileFocusIndex = selectedIndex >= 0
-    ? selectedIndex
-    : Math.max(0, displayed.length - 1)
+
+  const syncOverviewWindow = () => {
+    const rail = handRef.current
+    if (!rail) return
+    const maxScroll = Math.max(0, rail.scrollWidth - rail.clientWidth)
+    const visibleRatio = Math.min(1, rail.clientWidth / Math.max(rail.scrollWidth, 1))
+    const width = visibleRatio * 100
+    const left = maxScroll > 0 ? (rail.scrollLeft / maxScroll) * (100 - width) : 0
+    setOverviewWindow({ left, width })
+  }
+
+  const selectRailCenterTile = () => {
+    const rail = handRef.current
+    if (!rail) return
+    const centerX = rail.getBoundingClientRect().left + rail.clientWidth / 2
+    const slots = [...rail.querySelectorAll<HTMLElement>('[data-hand-tile-id]')]
+    let nearest: { id: string; distance: number } | null = null
+
+    for (const slot of slots) {
+      const rect = slot.getBoundingClientRect()
+      const distance = Math.abs(centerX - (rect.left + rect.width / 2))
+      if (!nearest || distance < nearest.distance) {
+        nearest = { id: slot.dataset.handTileId ?? '', distance }
+      }
+    }
+
+    if (nearest?.id && nearest.id !== gestureRef.current.selectedTileId) {
+      gestureRef.current.selectedTileId = nearest.id
+      gestureRef.current.selectedAtPointerDown = false
+      tapRef.current = { tileId: null, count: 0, lastAt: 0 }
+      setSelectedTileId(nearest.id)
+    }
+  }
 
   useEffect(() => {
     setSelectedTileId(null)
     setSelectedLift(0)
     tapRef.current = { tileId: null, count: 0, lastAt: 0 }
+    const frame = window.requestAnimationFrame(() => {
+      const rail = handRef.current
+      if (!rail) return
+      rail.scrollLeft = rail.scrollWidth - rail.clientWidth
+      syncOverviewWindow()
+    })
+    return () => window.cancelAnimationFrame(frame)
   }, [drawnTileId, canDiscard])
 
   useEffect(() => {
@@ -95,10 +133,11 @@ export function HandView({
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
-      startTileIndex: tileIndex,
+      startScrollLeft: event.currentTarget.scrollLeft,
       selectedTileId: tileId,
       selectedAtPointerDown: selectedTileId === tileId,
       moved: false,
+      horizontalLocked: false,
       verticalLocked: false,
     }
     if (selectedTileId !== tileId) {
@@ -113,31 +152,37 @@ export function HandView({
     if (gesture.pointerId !== event.pointerId) return
     event.preventDefault()
 
-    if (Math.abs(event.clientX - gesture.startX) > 6 || Math.abs(event.clientY - gesture.startY) > 6) {
+    const horizontalDistance = event.clientX - gesture.startX
+    const verticalDistance = event.clientY - gesture.startY
+    const absoluteX = Math.abs(horizontalDistance)
+    const absoluteY = Math.abs(verticalDistance)
+
+    if (absoluteX > 6 || absoluteY > 6) {
       gesture.moved = true
     }
 
     const upwardDistance = Math.max(0, gesture.startY - event.clientY)
-    if (upwardDistance >= 10) gesture.verticalLocked = true
-
-    if (!gesture.verticalLocked) {
-      const horizontalDistance = event.clientX - gesture.startX
-      const targetIndex = Math.max(0, Math.min(
-        displayed.length - 1,
-        gesture.startTileIndex + Math.round(horizontalDistance / 42),
-      ))
-      const hoveredTileId = displayed[targetIndex]?.id
-      if (hoveredTileId && hoveredTileId !== gesture.selectedTileId) {
-        gesture.selectedTileId = hoveredTileId
-        gesture.selectedAtPointerDown = false
-        tapRef.current = { tileId: null, count: 0, lastAt: 0 }
-        setSelectedTileId(hoveredTileId)
+    if (!gesture.horizontalLocked && !gesture.verticalLocked && (absoluteX >= 8 || absoluteY >= 8)) {
+      if (upwardDistance > absoluteX) {
+        gesture.verticalLocked = true
+      } else {
+        gesture.horizontalLocked = true
       }
     }
 
-    setSelectedLift(Math.min(upwardDistance, 42))
+    if (gesture.horizontalLocked) {
+      event.currentTarget.scrollLeft = gesture.startScrollLeft - horizontalDistance
+      setSelectedLift(0)
+      syncOverviewWindow()
+      selectRailCenterTile()
+      return
+    }
 
-    if (upwardDistance >= 48) {
+    if (gesture.verticalLocked) {
+      setSelectedLift(Math.min(upwardDistance, 42))
+    }
+
+    if (gesture.verticalLocked && upwardDistance >= 48) {
       const tileToDiscard = displayed.find((tile) => tile.id === gesture.selectedTileId)
       gesture.pointerId = -1
       if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -176,6 +221,7 @@ export function HandView({
     }
 
     gesture.pointerId = -1
+    gesture.horizontalLocked = false
     gesture.verticalLocked = false
     setSelectedLift(0)
   }
@@ -183,6 +229,7 @@ export function HandView({
   const cancelGesture = (event: PointerEvent<HTMLDivElement>) => {
     if (gestureRef.current.pointerId !== event.pointerId) return
     gestureRef.current.pointerId = -1
+    gestureRef.current.horizontalLocked = false
     gestureRef.current.verticalLocked = false
     setSelectedLift(0)
   }
@@ -195,6 +242,14 @@ export function HandView({
     >
       <span className="mobile-hand-guide overview-guide">全体表示・見るだけ</span>
       <div className="mobile-hand-overview" aria-label="手牌全体">
+        <span
+          className="mobile-overview-window"
+          aria-hidden="true"
+          style={{
+            left: `${overviewWindow.left}%`,
+            width: `${overviewWindow.width}%`,
+          }}
+        />
         {displayed.map((tile) => (
           <span className="mobile-overview-slot" key={`overview-${tile.id}`}>
             <TileView
@@ -209,11 +264,11 @@ export function HandView({
       <div
         className={`hand mobile-hand-rail ${canDiscard ? 'is-active' : ''}`}
         ref={handRef}
-        style={{ '--rail-focus-index': mobileFocusIndex } as CSSProperties}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={finishGesture}
         onPointerCancel={cancelGesture}
+        onScroll={syncOverviewWindow}
       >
         <div className="mobile-hand-track">
           {displayed.map((tile) => (

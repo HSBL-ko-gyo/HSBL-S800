@@ -996,12 +996,24 @@ h1 {
   }
   .mobile-hand-overview {
     display: flex;
+    position: relative;
     min-height: 40px;
     align-items: center;
     justify-content: center;
     gap: 1px;
     padding: 3px 5px 6px;
     pointer-events: none;
+  }
+  .mobile-overview-window {
+    position: absolute;
+    z-index: 3;
+    top: 0;
+    bottom: 3px;
+    border: 1px solid var(--gold);
+    border-radius: 5px;
+    background: rgba(232, 200, 121, .08);
+    box-shadow: 0 0 8px rgba(232, 200, 121, .22);
+    transition: left .04s linear;
   }
   .mobile-overview-slot {
     display: flex;
@@ -1019,28 +1031,29 @@ h1 {
     --rail-width: min(356px, calc(100vw - 34px));
     --rail-tile-width: 40px;
     --rail-gap: 2px;
-    --rail-span: calc(var(--rail-tile-width) + var(--rail-gap));
-    --rail-track-width: 586px;
-    --rail-max-offset: calc(var(--rail-track-width) - var(--rail-width));
-    --rail-center-offset: calc((var(--rail-width) - var(--rail-tile-width)) / 2);
     display: flex;
     position: relative;
     width: var(--rail-width);
     min-height: 106px;
     margin: 0 auto;
+    justify-content: flex-start;
     padding: 42px 0 10px;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
     touch-action: none;
+    overscroll-behavior-x: contain;
+    mask-image: linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 12px), transparent);
+  }
+  .hand.mobile-hand-rail::-webkit-scrollbar {
+    display: none;
   }
   .mobile-hand-track {
-    position: absolute;
-    left: 0;
-    bottom: 10px;
     display: flex;
+    align-self: flex-end;
     gap: var(--rail-gap);
-    width: var(--rail-track-width);
-    transform: translateX(clamp(calc(var(--rail-max-offset) * -1), calc(var(--rail-center-offset) - var(--rail-focus-index) * var(--rail-span)), 0px));
-    transition: transform .08s ease-out;
+    width: max-content;
+    padding-right: 1px;
   }
   .mobile-hand-rail .hand-tile-slot {
     display: flex;
