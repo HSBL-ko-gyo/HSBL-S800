@@ -136,12 +136,19 @@ export function TableView({
   const riichiWaits = getRiichiWaitTiles(game)
   const hasFourRowRiver = game.players.some((player) => player.river.length >= 19)
   const isMobileLayout = useMediaQuery('(max-width: 480px)')
+  const hasRonReaction = game.pendingReactionEvents.some((event) => event.canRon)
+  const hasOpenReaction = game.pendingReactionEvents.some((event) => event.canPon || event.canChi)
+  const isRonOnlyReaction = hasRonReaction && !hasOpenReaction
+  const reactionReviewLabel = isRonOnlyReaction ? 'ロン確認' : 'ツモ前確認'
+  const reactionReviewQuestion = isRonOnlyReaction ? 'ロンする？' : '宣言する？'
+  const reactionReviewActionLabel = isRonOnlyReaction ? 'ロン確認' : '宣言する'
+  const reactionReviewSkipLabel = isRonOnlyReaction ? '見送る' : 'ツモる'
   const statusText = game.status === 'draw'
     ? '流局'
     : game.status === 'win'
       ? game.winType === 'tsumo' ? 'ツモ和了' : 'ロン和了'
       : game.phase === 'reaction_review'
-        ? 'ツモ前確認'
+        ? reactionReviewLabel
         : game.phase === 'declare_reaction'
           ? '宣言選択'
         : canTsumo
@@ -150,7 +157,7 @@ export function TableView({
             ? game.playerRiichi ? 'リーチ中' : 'あなたの番'
             : `${currentPlayer.name} 打牌中`
   const handHint = game.pendingRonTile
-    ? game.phase === 'declare_reaction' ? '宣言する種類を選んでください' : 'ツモ前に宣言確認できます'
+    ? game.phase === 'declare_reaction' ? 'ロンするか選んでください' : 'ロンできる牌があります'
     : canTsumo
       ? 'ツモできます'
       : game.riichiDeclareMode
@@ -213,14 +220,14 @@ export function TableView({
           />
           <MeldView melds={game.players[0].melds} />
           {game.phase === 'reaction_review' && (
-            <section className="reaction-panel" aria-label="ツモ前確認">
+            <section className="reaction-panel" aria-label={reactionReviewLabel}>
               <div>
-                <span className="reaction-kicker">ツモ前確認</span>
-                <strong>宣言する？</strong>
+                <span className="reaction-kicker">{reactionReviewLabel}</span>
+                <strong>{reactionReviewQuestion}</strong>
               </div>
               <div className="reaction-actions">
-                <button className="reaction-secondary" type="button" onClick={onStartReaction}>宣言する</button>
-                <button className="reaction-primary" type="button" onClick={onSkipReactions}>ツモる</button>
+                <button className="reaction-secondary" type="button" onClick={onStartReaction}>{reactionReviewActionLabel}</button>
+                <button className="reaction-primary" type="button" onClick={onSkipReactions}>{reactionReviewSkipLabel}</button>
               </div>
             </section>
           )}

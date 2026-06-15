@@ -170,9 +170,10 @@ describe('riichi learning flow', () => {
     const ronHandEnd = html.indexOf('</section>', ronHandStart)
     const ronHandHtml = html.slice(ronHandStart, ronHandEnd)
     expect(ronHandHtml).not.toContain('>ロン</button>')
-    expect(html).toContain('ツモ前確認')
-    expect(html).toContain('>宣言する</button>')
-    expect(html).toContain('>ツモる</button>')
+    expect(html).toContain('ロン確認')
+    expect(html).toContain('>ロン確認</button>')
+    expect(html).toContain('>見送る</button>')
+    expect(html).not.toContain('>ツモる</button>')
 
     const declaring = startReactionDeclaration(pendingRon)
     expect(declaring.phase).toBe('declare_reaction')
@@ -335,6 +336,12 @@ describe('reaction declaration MVP', () => {
     expect(afterRonDiscard.pendingReactionEvents[0].canRon).toBe(true)
     expect(afterRonDiscard.pendingReactionEvents[0].canPon).toBe(false)
     expect(afterRonDiscard.pendingReactionEvents[0].canChi).toBe(false)
+
+    const ronHtml = renderTable(afterRonDiscard)
+    expect(ronHtml).toContain('ロン確認')
+    expect(ronHtml).toContain('ロンする？')
+    expect(ronHtml).toContain('>見送る</button>')
+    expect(ronHtml).not.toContain('>ツモる</button>')
   })
 
   it('does not show the pre-draw confirmation after riichi unless ron is available', () => {
