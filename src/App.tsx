@@ -5,10 +5,15 @@ import {
   beginTurn,
   canDeclareTsumo,
   createInitialGame,
+  declareReaction,
   declareWin,
   discardHumanTile,
   playAutomaticTurn,
+  setCallsDisabled,
   setRiichiDeclareMode,
+  skipReactionReview,
+  startReactionDeclaration,
+  type CallType,
   type GameState,
   type Tile,
 } from './gameEngine'
@@ -21,9 +26,16 @@ export default function App() {
   const [game, setGame] = useState<GameState>(newGame)
 
   useEffect(() => {
-    if (game.status !== 'playing' || game.pendingRonTile) return
+    if (game.status !== 'playing') return
 
-    if (game.currentPlayer === 0) {
+    if (game.phase === 'reaction_review' || game.phase === 'declare_reaction') return
+
+    if (game.phase === 'player_draw') {
+      setGame((current) => beginTurn(current))
+      return
+    }
+
+    if (game.phase === 'player_discard' && game.currentPlayer === 0) {
       if (!game.awaitingDiscard) {
         setGame((current) => beginTurn(current))
       } else if (game.playerRiichi && !canDeclareTsumo(game)) {
@@ -34,6 +46,8 @@ export default function App() {
       }
       return
     }
+
+    if (game.phase !== 'enemy_auto') return
 
     const delay = 50 + Math.floor(Math.random() * 101)
     const timer = window.setTimeout(() => {
@@ -48,6 +62,10 @@ export default function App() {
       if (current.currentPlayer !== 0) return current
       return discardHumanTile(current, tile.id)
     })
+  }
+
+  const handleDeclareReaction = (type: Exclude<CallType, 'kan'>, eventId: string, chiTileIds?: string[]) => {
+    setGame((current) => declareReaction(current, type, eventId, chiTileIds))
   }
 
   return (
@@ -70,13 +88,17 @@ export default function App() {
         game={game}
         onDiscard={handleDiscard}
         onRiichiMode={(enabled) => setGame((current) => setRiichiDeclareMode(current, enabled))}
+        onCallsDisabledMode={(enabled) => setGame((current) => setCallsDisabled(current, enabled))}
         onTsumo={() => setGame((current) => declareWin(current, 'tsumo'))}
         onRon={() => setGame((current) => declareWin(current, 'ron'))}
+        onStartReaction={() => setGame((current) => startReactionDeclaration(current))}
+        onSkipReactions={() => setGame((current) => skipReactionReview(current))}
+        onDeclareReaction={handleDeclareReaction}
         onRestart={() => setGame(newGame())}
       />
 
       <footer className="app-footer">
-        <span>鳴き・点数計算なし / クリックまたはタップで打牌</span>
+        <span>クリックまたはタップで打牌</span>
         <span className="footer-links">
           <a href="https://hsbl-ko-gyo.github.io/mahjong-bootcamp/" target="_blank" rel="noreferrer">個別練習は麻雀ブートキャンプへ</a>
           <span aria-hidden="true">・</span>

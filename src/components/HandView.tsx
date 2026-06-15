@@ -1,9 +1,157 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
-import type { Tile } from '../gameEngine'
-import { sortTiles } from '../gameEngine'
+import type { Tile, TileCode } from '../gameEngine'
+import { sortTiles, TILE_CODES } from '../gameEngine'
 import { TileView } from './TileView'
 
 const DISCARD_SWIPE_THRESHOLD = 48
+const SUITS = ['m', 'p', 's'] as const
+
+type BlockKind = 'meld' | 'pair' | 'ryanmen' | 'kanchan' | 'penchan' | 'floating'
+
+interface HandBlock {
+  kind: BlockKind
+  label: string
+  shortLabel: string
+  tileIds: string[]
+}
+
+interface HandBlockSegment {
+  key: string
+  kind: BlockKind
+  label: string
+  start: number
+  length: number
+}
+
+interface BlockTactic {
+  tone: 'shortage' | 'ready' | 'overflow'
+  label: string
+  detail: string
+}
+
+function suitedCode(number: number, suit: (typeof SUITS)[number]): TileCode {
+  return `${number}${suit}` as TileCode
+}
+
+function buildHandBlocks(tiles: Tile[]): HandBlock[] {
+  const pools = new Map<TileCode, Tile[]>()
+  const blocks: HandBlock[] = []
+
+  tiles.forEach((tile) => {
+    const pool = pools.get(tile.code) ?? []
+    pool.push(tile)
+    pools.set(tile.code, pool)
+  })
+
+  const take = (codes: TileCode[]): Tile[] | null => {
+    if (codes.some((code) => (pools.get(code)?.length ?? 0) === 0)) return null
+    return codes.map((code) => pools.get(code)!.shift()!)
+  }
+
+  const addBlock = (kind: BlockKind, label: string, shortLabel: string, taken: Tile[] | null) => {
+    if (!taken) return
+    blocks.push({ kind, label, shortLabel, tileIds: taken.map((tile) => tile.id) })
+  }
+
+  for (const code of TILE_CODES) {
+    while ((pools.get(code)?.length ?? 0) >= 3) addBlock('meld', '刻子', '刻', take([code, code, code]))
+  }
+
+  for (const suit of SUITS) {
+    for (let number = 1; number <= 7; number += 1) {
+      const codes = [suitedCode(number, suit), suitedCode(number + 1, suit), suitedCode(number + 2, suit)]
+      while (codes.every((code) => (pools.get(code)?.length ?? 0) > 0)) addBlock('meld', '順子', '順', take(codes))
+    }
+  }
+
+  for (const code of TILE_CODES) {
+    while ((pools.get(code)?.length ?? 0) >= 2) addBlock('pair', '対子', '対', take([code, code]))
+  }
+
+  for (const suit of SUITS) {
+    for (let number = 2; number <= 7; number += 1) {
+      const codes = [suitedCode(number, suit), suitedCode(number + 1, suit)]
+      while (codes.every((code) => (pools.get(code)?.length ?? 0) > 0)) addBlock('ryanmen', '両面', '両', take(codes))
+    }
+  }
+
+  for (const suit of SUITS) {
+    for (const number of [1, 8]) {
+      const codes = [suitedCode(number, suit), suitedCode(number + 1, suit)]
+      while (codes.every((code) => (pools.get(code)?.length ?? 0) > 0)) addBlock('penchan', '辺張', '辺', take(codes))
+    }
+  }
+
+  for (const suit of SUITS) {
+    for (let number = 1; number <= 7; number += 1) {
+      const codes = [suitedCode(number, suit), suitedCode(number + 2, suit)]
+      while (codes.every((code) => (pools.get(code)?.length ?? 0) > 0)) addBlock('kanchan', '嵌張', '嵌', take(codes))
+    }
+  }
+
+  for (const code of TILE_CODES) {
+    while ((pools.get(code)?.length ?? 0) > 0) addBlock('floating', '浮き牌', '浮', take([code]))
+  }
+
+  return blocks
+}
+
+function buildHandBlockSegments(blocks: HandBlock[], tiles: Tile[]): HandBlockSegment[] {
+  const indexById = new Map(tiles.map((tile, index) => [tile.id, index]))
+  return blocks.flatMap((block, blockIndex) => {
+    const indexes = block.tileIds
+      .map((id) => indexById.get(id))
+      .filter((index): index is number => index !== undefined)
+      .sort((a, b) => a - b)
+    const segments: HandBlockSegment[] = []
+    let segmentStart = indexes[0]
+    let previous = indexes[0]
+
+    for (let index = 1; index <= indexes.length; index += 1) {
+      const current = indexes[index]
+      if (current === previous + 1) {
+        previous = current
+        continue
+      }
+      if (segmentStart !== undefined && previous !== undefined) {
+        segments.push({
+          key: `${blockIndex}-${segmentStart}`,
+          kind: block.kind,
+          label: previous === segmentStart ? block.shortLabel : block.label,
+          start: segmentStart,
+          length: previous - segmentStart + 1,
+        })
+      }
+      segmentStart = current
+      previous = current
+    }
+
+    return segments
+  }).sort((a, b) => a.start - b.start)
+}
+
+function getBlockTactic(blocks: HandBlock[]): BlockTactic {
+  const count = blocks.filter((block) => block.kind !== 'floating').length
+  if (count >= 6) {
+    return {
+      tone: 'overflow',
+      label: `${count}ブロック過多`,
+      detail: '弱いターツか役に絡みにくい対子を整理',
+    }
+  }
+  if (count === 5) {
+    return {
+      tone: 'ready',
+      label: '5ブロック適正',
+      detail: 'ブロックを壊さず良形化',
+    }
+  }
+  return {
+    tone: 'shortage',
+    label: `${count}ブロック不足`,
+    detail: '浮き牌から新しいターツを作る',
+  }
+}
 
 interface HandViewProps {
   tiles: Tile[]
@@ -60,6 +208,10 @@ export function HandView({
   const drawnTile = tiles.find((tile) => tile.id === drawnTileId)
   const concealed = sortTiles(tiles.filter((tile) => tile.id !== drawnTileId))
   const displayed = drawnTile ? [...concealed, drawnTile] : concealed
+  const handBlocks = buildHandBlocks(displayed)
+  const handBlockSegments = buildHandBlockSegments(handBlocks, displayed)
+  const blockSummary = handBlocks.map((block) => block.label).join('、')
+  const blockTactic = getBlockTactic(handBlocks)
 
   const syncOverviewWindow = () => {
     const rail = handRef.current
@@ -260,22 +412,11 @@ export function HandView({
     }
 
     if (!gesture.moved && gesture.selectedAtPointerDown && gesture.selectedTileId) {
-      const now = Date.now()
-      const continuesDoubleTap = tapRef.current.tileId === gesture.selectedTileId
-        && now - tapRef.current.lastAt <= 500
-      tapRef.current = {
-        tileId: gesture.selectedTileId,
-        count: continuesDoubleTap ? tapRef.current.count + 1 : 1,
-        lastAt: now,
-      }
-
-      if (tapRef.current.count >= 2) {
-        const tileToDiscard = displayed.find((tile) => tile.id === gesture.selectedTileId)
-        tapRef.current = { tileId: null, count: 0, lastAt: 0 }
-        setSelectedTileId(null)
-        setDiscardProgress(0)
-        if (tileToDiscard) onDiscard(tileToDiscard)
-      }
+      const tileToDiscard = displayed.find((tile) => tile.id === gesture.selectedTileId)
+      tapRef.current = { tileId: null, count: 0, lastAt: 0 }
+      setSelectedTileId(null)
+      setDiscardProgress(0)
+      if (tileToDiscard) onDiscard(tileToDiscard)
     }
 
     gesture.pointerId = -1
@@ -333,6 +474,22 @@ export function HandView({
           </span>
         ))}
       </div>
+      <div className={`mobile-block-count-guide block-count-guide block-count-${blockTactic.tone}`}>
+        <b>5ブロック打法</b>
+        <span>{blockTactic.label}</span>
+        <small>{blockTactic.detail}</small>
+      </div>
+      <div className="mobile-block-guide" aria-label={`ブロック補助: ${blockSummary}`}>
+        {handBlockSegments.map((block) => (
+          <span
+            className={`block-guide-item block-guide-item-${block.kind}`}
+            key={block.key}
+            style={{ gridColumn: `${block.start + 1} / span ${block.length}` }}
+          >
+            {block.label}
+          </span>
+        ))}
+      </div>
       <span className="mobile-hand-guide rail-guide">拡大操作・ここを横スライド</span>
       <div className="mobile-hand-control">
         <span className="discard-threshold-guide" aria-hidden="true">
@@ -377,6 +534,22 @@ export function HandView({
               disabled={!canDiscard}
               onClick={canDiscard ? handleTileClick : undefined}
             />
+          </span>
+        ))}
+      </div>
+      <div className={`desktop-block-count-guide block-count-guide block-count-${blockTactic.tone}`}>
+        <b>5ブロック打法</b>
+        <span>{blockTactic.label}</span>
+        <small>{blockTactic.detail}</small>
+      </div>
+      <div className="desktop-block-guide" aria-label={`ブロック補助: ${blockSummary}`}>
+        {handBlockSegments.map((block) => (
+          <span
+            className={`block-guide-item block-guide-item-${block.kind}`}
+            key={`desktop-${block.key}`}
+            style={{ gridColumn: `${block.start + 1} / span ${block.length}` }}
+          >
+            {block.label}
           </span>
         ))}
       </div>

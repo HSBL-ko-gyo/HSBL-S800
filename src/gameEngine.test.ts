@@ -6,6 +6,7 @@ import {
   createTileSet,
   discardTile,
   playAutomaticTurn,
+  skipReactionReview,
 } from './gameEngine'
 
 const fixedRandom = () => 0.42
@@ -48,6 +49,10 @@ describe('game engine', () => {
     let game = createInitialGame(fixedRandom)
 
     while (game.status === 'playing') {
+      if (game.phase === 'reaction_review' || game.phase === 'declare_reaction') {
+        game = skipReactionReview(game)
+        continue
+      }
       if (game.currentPlayer === 0) {
         const drawn = beginTurn(game)
         if (drawn.status === 'draw') {

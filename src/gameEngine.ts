@@ -16,11 +16,40 @@ export interface Tile {
   code: TileCode
 }
 
+export type PlayerId = 0 | 1 | 2 | 3
+export type CallType = 'ron' | 'pon' | 'chi' | 'kan'
+export type MeldType = 'pon' | 'chi' | 'kan'
+export type GamePhase =
+  | 'player_draw'
+  | 'player_discard'
+  | 'enemy_auto'
+  | 'reaction_review'
+  | 'declare_reaction'
+  | 'win'
+  | 'draw'
+
+export interface Meld {
+  type: MeldType
+  tiles: Tile[]
+  calledTile: Tile
+  from: PlayerId
+}
+
+export interface DiscardRecord {
+  id: string
+  tile: Tile
+  actor: PlayerId
+  calledBy?: PlayerId
+  callType?: CallType
+}
+
 export interface PlayerState {
   name: string
   wind: Wind
   hand: Tile[]
-  river: Tile[]
+  river: DiscardRecord[]
+  melds: Meld[]
+  isRiichi: boolean
 }
 
 export interface ImprovementTile {
@@ -85,12 +114,45 @@ export interface DiscardLog {
   explanation: string
 }
 
+export interface RollbackSnapshot {
+  players: PlayerState[]
+  wall: Tile[]
+  currentPlayer: PlayerId
+  phase: GamePhase
+  awaitingDiscard: boolean
+  drawnTileId: string | null
+  turnNumber: number
+  lastDiscard: { playerIndex: number; tileId: string } | null
+}
+
+export interface ReactionEvent {
+  id: string
+  actor: PlayerId
+  tile: Tile
+  riverDiscardId: string
+  turnIndex: number
+  canRon: boolean
+  canPon: boolean
+  canChi: boolean
+  snapshot: RollbackSnapshot
+}
+
+export interface CallLog {
+  turnIndex: number
+  type: 'ron' | 'pon' | 'chi'
+  targetTile: Tile
+  targetPlayer: PlayerId
+  success: boolean
+  reason?: string
+}
+
 export interface GameState {
   status: 'playing' | 'draw' | 'win'
+  phase: GamePhase
   winType: 'tsumo' | 'ron' | null
   wall: Tile[]
   players: PlayerState[]
-  currentPlayer: number
+  currentPlayer: PlayerId
   awaitingDiscard: boolean
   drawnTileId: string | null
   turnNumber: number
@@ -102,6 +164,10 @@ export interface GameState {
   lastEvaluation: DiscardEvaluation | null
   discardLogs: DiscardLog[]
   pendingRonTile: Tile | null
+  reactionEvents: ReactionEvent[]
+  pendingReactionEvents: ReactionEvent[]
+  callLogs: CallLog[]
+  callsDisabled: boolean
 }
 
 const PLAYER_DATA: Array<{ name: string; wind: Wind }> = [
@@ -156,7 +222,7 @@ export function sortTiles(tiles: Tile[]): Tile[] {
   )
 }
 
-function standardShanten(tiles: Array<Tile | TileCode>): number {
+function standardShanten(tiles: Array<Tile | TileCode>, openMelds = 0): number {
   const counts = toCounts(tiles)
   let minimum = 8
 
@@ -212,7 +278,7 @@ function standardShanten(tiles: Array<Tile | TileCode>): number {
     counts[index] += 1
   }
 
-  search(0, 0, 0, 0)
+  search(0, openMelds, 0, 0)
   return minimum
 }
 
@@ -231,7 +297,8 @@ function thirteenOrphansShanten(tiles: Array<Tile | TileCode>): number {
   return 13 - unique - (hasPair ? 1 : 0)
 }
 
-export function calculateShanten(hand: Array<Tile | TileCode>): number {
+export function calculateShanten(hand: Array<Tile | TileCode>, meldCount = 0): number {
+  if (meldCount > 0) return standardShanten(hand, meldCount)
   return Math.min(
     standardShanten(hand),
     sevenPairsShanten(hand),
@@ -239,24 +306,25 @@ export function calculateShanten(hand: Array<Tile | TileCode>): number {
   )
 }
 
-export function isTenpai(hand13: Array<Tile | TileCode>): boolean {
-  return hand13.length % 3 === 1 && calculateShanten(hand13) === 0
+export function isTenpai(hand13: Array<Tile | TileCode>, meldCount = 0): boolean {
+  return hand13.length % 3 === 1 && calculateShanten(hand13, meldCount) === 0
 }
 
-export function isWinningHand(hand14: Array<Tile | TileCode>): boolean {
-  return hand14.length % 3 === 2 && calculateShanten(hand14) === -1
+export function isWinningHand(hand14: Array<Tile | TileCode>, meldCount = 0): boolean {
+  return hand14.length % 3 === 2 && calculateShanten(hand14, meldCount) === -1
 }
 
 export function getWaitTiles(
   hand: Array<Tile | TileCode>,
   visibleTiles: Array<Tile | TileCode> = [],
+  meldCount = 0,
 ): ImprovementTile[] {
-  const baseShanten = calculateShanten(hand)
+  const baseShanten = calculateShanten(hand, meldCount)
   const visibleCounts = toCounts([...hand, ...visibleTiles])
 
   return TILE_CODES.flatMap((code, index) => {
     if (visibleCounts[index] >= 4) return []
-    const nextShanten = calculateShanten([...hand, code])
+    const nextShanten = calculateShanten([...hand, code], meldCount)
     if (nextShanten >= baseShanten) return []
     return [{ code, remaining: 4 - visibleCounts[index] }]
   })
@@ -364,13 +432,14 @@ function isIsolatedDiscard(discard: Tile, hand: Tile[]): boolean {
 export function analyzeDiscardOptions(
   hand14: Tile[],
   visibleTiles: Tile[] = [],
+  meldCount = 0,
 ): DiscardOptionAnalysis[] {
   const byCode = new Map<TileCode, Tile>()
   for (const tile of hand14) if (!byCode.has(tile.code)) byCode.set(tile.code, tile)
 
   const raw = [...byCode.values()].map((discard) => {
     const postHand = sortTiles(hand14.filter((tile) => tile.id !== discard.id))
-    const improvementTiles = getWaitTiles(postHand, [...visibleTiles, discard])
+    const improvementTiles = getWaitTiles(postHand, [...visibleTiles, discard], meldCount)
     const improvementTypeCount = improvementTiles.length
     const improvementTileCount = improvementTiles.reduce((sum, tile) => sum + tile.remaining, 0)
     const yakuHints = getYakuHints(postHand)
@@ -379,12 +448,12 @@ export function analyzeDiscardOptions(
     const isolatedDiscard = isIsolatedDiscard(discard, hand14)
     return {
       discard,
-      shanten: calculateShanten(postHand),
+      shanten: calculateShanten(postHand, meldCount),
       improvementTiles,
       improvementTypeCount,
       improvementTileCount,
       yakuHints,
-      canRiichi: isTenpai(postHand),
+      canRiichi: meldCount === 0 && isTenpai(postHand),
       goodShapeCount,
       structureScore,
       isolatedDiscard,
@@ -518,13 +587,135 @@ export function buildDiscardEvaluation(
   }
 }
 
+function asPlayerId(index: number): PlayerId {
+  return (index % 4) as PlayerId
+}
+
+function isKamicha(actor: PlayerId, playerId: PlayerId): boolean {
+  return actor === asPlayerId(playerId + 3)
+}
+
+function findTilesByCode(hand: Tile[], code: TileCode, count: number): Tile[] | null {
+  const tiles = hand.filter((tile) => tile.code === code).slice(0, count)
+  return tiles.length === count ? tiles : null
+}
+
+function suitedCode(number: number, suit: string): TileCode | null {
+  if (number < 1 || number > 9 || !['m', 'p', 's'].includes(suit)) return null
+  return `${number}${suit}` as TileCode
+}
+
+export function getChiOptions(hand: Tile[], calledTile: Tile): Tile[][] {
+  if (calledTile.code.length !== 2) return []
+  const number = Number(calledTile.code[0])
+  const suit = calledTile.code[1]
+  const patterns = [
+    [number - 2, number - 1],
+    [number - 1, number + 1],
+    [number + 1, number + 2],
+  ]
+  const seen = new Set<string>()
+
+  return patterns.flatMap(([left, right]) => {
+    const leftCode = suitedCode(left, suit)
+    const rightCode = suitedCode(right, suit)
+    if (!leftCode || !rightCode) return []
+    const key = `${leftCode}-${rightCode}`
+    if (seen.has(key)) return []
+    seen.add(key)
+    const leftTile = findTilesByCode(hand, leftCode, 1)?.[0]
+    const rightTile = findTilesByCode(hand, rightCode, 1)?.[0]
+    return leftTile && rightTile ? [[leftTile, rightTile]] : []
+  })
+}
+
+function snapshotState(state: GameState): RollbackSnapshot {
+  return {
+    players: state.players,
+    wall: state.wall,
+    currentPlayer: state.currentPlayer,
+    phase: state.phase,
+    awaitingDiscard: state.awaitingDiscard,
+    drawnTileId: state.drawnTileId,
+    turnNumber: state.turnNumber,
+    lastDiscard: state.lastDiscard,
+  }
+}
+
+function markDiscardCalled(
+  players: PlayerState[],
+  event: ReactionEvent,
+  callType: CallType,
+  calledBy: PlayerId = 0,
+): PlayerState[] {
+  return players.map((player, playerIndex) => playerIndex === event.actor
+    ? {
+        ...player,
+        river: player.river.map((record) => record.id === event.riverDiscardId
+          ? { ...record, calledBy, callType }
+          : record),
+      }
+    : player)
+}
+
+function getHumanReactionEvent(state: GameState, record: DiscardRecord): ReactionEvent | null {
+  if (record.actor === 0) return null
+
+  const human = state.players[0]
+  const meldCount = human.melds.length
+  const canRon = isWinningHand([...human.hand, record.tile], meldCount)
+  const canCallOpen = !state.callsDisabled && !state.playerRiichi && meldCount < 4
+  const canPon = canCallOpen && human.hand.filter((tile) => tile.code === record.tile.code).length >= 2
+  const canChi = canCallOpen && isKamicha(record.actor, 0) && getChiOptions(human.hand, record.tile).length > 0
+  if (!canRon && !canPon && !canChi) return null
+
+  return {
+    id: `reaction-${record.id}`,
+    actor: record.actor,
+    tile: record.tile,
+    riverDiscardId: record.id,
+    turnIndex: state.turnNumber,
+    canRon,
+    canPon,
+    canChi,
+    snapshot: snapshotState(state),
+  }
+}
+
+function nextPhaseAfterDiscard(
+  nextPlayer: PlayerId,
+  pendingReactionEvents: ReactionEvent[],
+  callsDisabled: boolean,
+  playerRiichi: boolean,
+): GamePhase {
+  const hasRon = pendingReactionEvents.some((event) => event.canRon)
+  if (nextPlayer === 0 && playerRiichi && hasRon) return 'reaction_review'
+  if (nextPlayer === 0 && playerRiichi) return 'player_draw'
+  if (nextPlayer === 0 && (!callsDisabled || hasRon)) {
+    return 'reaction_review'
+  }
+  if (nextPlayer === 0) return 'player_draw'
+  return 'enemy_auto'
+}
+
 export function getVisibleTiles(state: GameState): Tile[] {
-  return state.players.flatMap((player) => player.river)
+  return [
+    ...state.players.flatMap((player) =>
+      player.river.filter((record) => record.calledBy === undefined).map((record) => record.tile),
+    ),
+    ...state.players.flatMap((player) => player.melds.flatMap((meld) => meld.tiles)),
+  ]
 }
 
 export function createInitialGame(random: () => number = Math.random): GameState {
   const wall = shuffleTiles(createTileSet(), random)
-  const players: PlayerState[] = PLAYER_DATA.map((player) => ({ ...player, hand: [], river: [] }))
+  const players: PlayerState[] = PLAYER_DATA.map((player) => ({
+    ...player,
+    hand: [],
+    river: [],
+    melds: [],
+    isRiichi: false,
+  }))
 
   for (let round = 0; round < 13; round += 1) {
     for (const player of players) {
@@ -537,6 +728,7 @@ export function createInitialGame(random: () => number = Math.random): GameState
 
   return {
     status: 'playing',
+    phase: 'player_draw',
     winType: null,
     wall,
     players: players.map((player) => ({ ...player, hand: sortTiles(player.hand) })),
@@ -552,13 +744,23 @@ export function createInitialGame(random: () => number = Math.random): GameState
     lastEvaluation: null,
     discardLogs: [],
     pendingRonTile: null,
+    reactionEvents: [],
+    pendingReactionEvents: [],
+    callLogs: [],
+    callsDisabled: false,
   }
 }
 
 export function beginTurn(state: GameState): GameState {
-  if (state.status !== 'playing' || state.awaitingDiscard || state.pendingRonTile) return state
+  if (
+    state.status !== 'playing'
+    || state.awaitingDiscard
+    || state.pendingRonTile
+    || state.phase === 'reaction_review'
+    || state.phase === 'declare_reaction'
+  ) return state
   if (state.wall.length === 0) {
-    return { ...state, status: 'draw', drawnTileId: null, riichiDeclareMode: false }
+    return { ...state, status: 'draw', phase: 'draw', drawnTileId: null, riichiDeclareMode: false }
   }
 
   const wall = [...state.wall]
@@ -573,39 +775,60 @@ export function beginTurn(state: GameState): GameState {
     players,
     awaitingDiscard: true,
     drawnTileId: drawnTile.id,
+    phase: 'player_discard',
   }
 }
 
 function applyDiscard(state: GameState, tileId: string): GameState {
-  if (state.status !== 'playing' || !state.awaitingDiscard || state.pendingRonTile) return state
+  if (
+    state.status !== 'playing'
+    || !state.awaitingDiscard
+    || state.phase === 'reaction_review'
+    || state.phase === 'declare_reaction'
+  ) return state
 
   const player = state.players[state.currentPlayer]
   const discarded = player.hand.find((tile) => tile.id === tileId)
   if (!discarded) return state
 
   const playerIndex = state.currentPlayer
+  const discardRecord: DiscardRecord = {
+    id: `discard-${state.turnNumber + 1}-${discarded.id}`,
+    tile: discarded,
+    actor: asPlayerId(playerIndex),
+  }
   const players = state.players.map((item, index) => index === playerIndex
     ? {
         ...item,
         hand: sortTiles(item.hand.filter((tile) => tile.id !== tileId)),
-        river: [...item.river, discarded],
+        river: [...item.river, discardRecord],
       }
     : item)
-  const pendingRonTile = playerIndex !== 0
-    && state.playerRiichi
-    && isWinningHand([...players[0].hand, discarded])
-      ? discarded
-      : null
-
-  return {
+  const nextPlayer = asPlayerId(playerIndex + 1)
+  const baseState: GameState = {
     ...state,
     players,
-    currentPlayer: (playerIndex + 1) % players.length,
+    currentPlayer: nextPlayer,
     awaitingDiscard: false,
     drawnTileId: null,
     turnNumber: state.turnNumber + 1,
     lastDiscard: { playerIndex, tileId },
-    pendingRonTile,
+    pendingRonTile: null,
+  }
+  const reactionEvent = getHumanReactionEvent(baseState, discardRecord)
+  const pendingReactionEvents = reactionEvent
+    ? [...state.pendingReactionEvents, reactionEvent]
+    : state.pendingReactionEvents
+  const phase = nextPhaseAfterDiscard(nextPlayer, pendingReactionEvents, state.callsDisabled, state.playerRiichi)
+
+  return {
+    ...baseState,
+    phase,
+    pendingRonTile: phase === 'reaction_review' && pendingReactionEvents.some((event) => event.canRon)
+      ? pendingReactionEvents.find((event) => event.canRon)?.tile ?? null
+      : null,
+    reactionEvents: reactionEvent ? [...state.reactionEvents, reactionEvent] : state.reactionEvents,
+    pendingReactionEvents,
   }
 }
 
@@ -620,8 +843,33 @@ export function setRiichiDeclareMode(state: GameState, enabled: boolean): GameSt
     || state.currentPlayer !== 0
     || !state.awaitingDiscard
     || state.playerRiichi
+    || state.players[0].melds.length > 0
   ) return state
   return { ...state, riichiDeclareMode: enabled, lastFeedback: null }
+}
+
+export function setCallsDisabled(state: GameState, enabled: boolean): GameState {
+  if (state.status !== 'playing') return { ...state, callsDisabled: enabled }
+  if (!enabled) return { ...state, callsDisabled: false }
+
+  const ronEvents = state.pendingReactionEvents.filter((event) => event.canRon)
+  if (state.phase === 'reaction_review' && ronEvents.length === 0) {
+    return {
+      ...state,
+      callsDisabled: true,
+      phase: 'player_draw',
+      pendingReactionEvents: [],
+      pendingRonTile: null,
+      lastFeedback: null,
+    }
+  }
+
+  return {
+    ...state,
+    callsDisabled: true,
+    pendingReactionEvents: ronEvents,
+    pendingRonTile: ronEvents[0]?.tile ?? null,
+  }
 }
 
 function appendHumanLog(
@@ -666,7 +914,8 @@ export function discardHumanTile(state: GameState, tileId: string): GameState {
   const hand14 = state.players[0].hand
   const discarded = hand14.find((tile) => tile.id === tileId)
   if (!discarded) return state
-  const analysis = analyzeDiscardOptions(hand14, getVisibleTiles(state))
+  const meldCount = state.players[0].melds.length
+  const analysis = analyzeDiscardOptions(hand14, getVisibleTiles(state), meldCount)
   const selected = analysis.find((option) => option.discard.code === discarded.code)!
 
   if (state.riichiDeclareMode && !selected.canRiichi) {
@@ -687,6 +936,9 @@ export function discardHumanTile(state: GameState, tileId: string): GameState {
   return {
     ...withLog,
     playerRiichi: state.playerRiichi || declaredRiichi,
+    players: withLog.players.map((player, index) => index === 0
+      ? { ...player, isRiichi: state.playerRiichi || declaredRiichi }
+      : player),
     riichiWaitTiles,
     riichiDeclareMode: false,
     lastFeedback: declaredRiichi
@@ -704,22 +956,199 @@ export function autoDiscardRiichiDraw(state: GameState): GameState {
     || !state.playerRiichi
     || !state.awaitingDiscard
     || !state.drawnTileId
-    || isWinningHand(state.players[0].hand)
+    || isWinningHand(state.players[0].hand, state.players[0].melds.length)
   ) return state
 
   const hand14 = state.players[0].hand
   const discarded = hand14.find((tile) => tile.id === state.drawnTileId)!
-  const analysis = analyzeDiscardOptions(hand14, getVisibleTiles(state))
+  const analysis = analyzeDiscardOptions(hand14, getVisibleTiles(state), state.players[0].melds.length)
   const selected = analysis.find((option) => option.discard.code === discarded.code)!
   const evaluation = buildDiscardEvaluation(discarded, analysis, hand14, { playerAlreadyRiichi: true })
   return appendHumanLog(state, applyDiscard(state, discarded.id), { ...selected, discard: discarded }, evaluation, false)
+}
+
+export function startReactionDeclaration(state: GameState): GameState {
+  if (state.status !== 'playing' || state.phase !== 'reaction_review') {
+    return state
+  }
+  return { ...state, phase: 'declare_reaction', lastFeedback: null }
+}
+
+export function skipReactionReview(state: GameState): GameState {
+  if (state.status !== 'playing' || !['reaction_review', 'declare_reaction'].includes(state.phase)) return state
+  return {
+    ...state,
+    phase: 'player_draw',
+    pendingReactionEvents: [],
+    pendingRonTile: null,
+    lastFeedback: null,
+  }
+}
+
+function findReactionEvent(state: GameState, eventId?: string): ReactionEvent | null {
+  if (state.pendingReactionEvents.length === 0) return null
+  if (!eventId) return state.pendingReactionEvents[0]
+  return state.pendingReactionEvents.find((event) => event.id === eventId) ?? null
+}
+
+function restoreReactionSnapshot(state: GameState, event: ReactionEvent): GameState {
+  return {
+    ...state,
+    players: event.snapshot.players,
+    wall: event.snapshot.wall,
+    currentPlayer: event.snapshot.currentPlayer,
+    awaitingDiscard: event.snapshot.awaitingDiscard,
+    drawnTileId: event.snapshot.drawnTileId,
+    turnNumber: event.snapshot.turnNumber,
+    lastDiscard: event.snapshot.lastDiscard,
+  }
+}
+
+function failedCall(state: GameState, type: 'ron' | 'pon' | 'chi', event: ReactionEvent | null, reason: string): GameState {
+  return {
+    ...state,
+    phase: 'reaction_review',
+    lastFeedback: reason,
+    callLogs: event
+      ? [...state.callLogs, {
+          turnIndex: state.turnNumber,
+          type,
+          targetTile: event.tile,
+          targetPlayer: event.actor,
+          success: false,
+          reason,
+        }]
+      : state.callLogs,
+  }
+}
+
+export function declareReaction(
+  state: GameState,
+  type: 'ron' | 'pon' | 'chi',
+  eventId?: string,
+  chiTileIds: string[] = [],
+): GameState {
+  if (state.status !== 'playing' || state.phase !== 'declare_reaction') return state
+
+  const event = findReactionEvent(state, eventId)
+  if (!event) return failedCall(state, type, null, '宣言できる捨て牌がありません')
+
+  if (type === 'ron') {
+    const restored = restoreReactionSnapshot(state, event)
+    if (!event.canRon || !isWinningHand([...restored.players[0].hand, event.tile], restored.players[0].melds.length)) {
+      return failedCall(state, type, event, 'その牌ではロンできません')
+    }
+    return {
+      ...restored,
+      status: 'win',
+      phase: 'win',
+      winType: 'ron',
+      awaitingDiscard: false,
+      pendingRonTile: null,
+      pendingReactionEvents: [],
+      players: markDiscardCalled(restored.players, event, 'ron'),
+      lastFeedback: 'ロン成立！',
+      callLogs: [...state.callLogs, {
+        turnIndex: event.turnIndex,
+        type,
+        targetTile: event.tile,
+        targetPlayer: event.actor,
+        success: true,
+        reason: 'ロン成立',
+      }],
+    }
+  }
+
+  if (state.playerRiichi) return failedCall(state, type, event, 'リーチ中は鳴けません')
+
+  const restored = restoreReactionSnapshot(state, event)
+  const human = restored.players[0]
+
+  if (type === 'pon') {
+    const taken = findTilesByCode(human.hand, event.tile.code, 2)
+    if (!event.canPon || !taken) return failedCall(state, type, event, 'その牌ではポンできません')
+    const meld: Meld = {
+      type: 'pon',
+      tiles: sortTiles([...taken, event.tile]),
+      calledTile: event.tile,
+      from: event.actor,
+    }
+    const players = markDiscardCalled(restored.players, event, 'pon').map((player, index) => index === 0
+      ? {
+          ...player,
+          hand: sortTiles(player.hand.filter((tile) => !taken.some((item) => item.id === tile.id))),
+          melds: [...player.melds, meld],
+        }
+      : player)
+    return {
+      ...restored,
+      players,
+      currentPlayer: 0,
+      phase: 'player_discard',
+      awaitingDiscard: true,
+      drawnTileId: null,
+      pendingRonTile: null,
+      pendingReactionEvents: [],
+      riichiDeclareMode: false,
+      lastFeedback: 'ポン成立！',
+      callLogs: [...state.callLogs, {
+        turnIndex: event.turnIndex,
+        type,
+        targetTile: event.tile,
+        targetPlayer: event.actor,
+        success: true,
+        reason: 'ポン成立',
+      }],
+    }
+  }
+
+  const options = getChiOptions(human.hand, event.tile)
+  const selected = chiTileIds.length === 2
+    ? options.find((option) => option.every((tile) => chiTileIds.includes(tile.id)))
+    : options[0]
+  if (!event.canChi || !selected || !isKamicha(event.actor, 0)) {
+    return failedCall(state, type, event, 'その牌ではチーできません')
+  }
+  const meld: Meld = {
+    type: 'chi',
+    tiles: sortTiles([...selected, event.tile]),
+    calledTile: event.tile,
+    from: event.actor,
+  }
+  const players = markDiscardCalled(restored.players, event, 'chi').map((player, index) => index === 0
+    ? {
+        ...player,
+        hand: sortTiles(player.hand.filter((tile) => !selected.some((item) => item.id === tile.id))),
+        melds: [...player.melds, meld],
+      }
+    : player)
+  return {
+    ...restored,
+    players,
+    currentPlayer: 0,
+    phase: 'player_discard',
+    awaitingDiscard: true,
+    drawnTileId: null,
+    pendingRonTile: null,
+    pendingReactionEvents: [],
+    riichiDeclareMode: false,
+    lastFeedback: 'チー成立！',
+    callLogs: [...state.callLogs, {
+      turnIndex: event.turnIndex,
+      type,
+      targetTile: event.tile,
+      targetPlayer: event.actor,
+      success: true,
+      reason: 'チー成立',
+    }],
+  }
 }
 
 export function getRiichiWaitTiles(state: GameState): ImprovementTile[] {
   if (!state.playerRiichi || state.riichiWaitTiles.length === 0) return []
   const visibleCounts = toCounts([
     ...state.players[0].hand,
-    ...state.players.flatMap((player) => player.river),
+    ...getVisibleTiles(state),
   ])
   return state.riichiWaitTiles.map((code) => ({
     code,
@@ -729,10 +1158,11 @@ export function getRiichiWaitTiles(state: GameState): ImprovementTile[] {
 
 export function canDeclareTsumo(state: GameState): boolean {
   return state.status === 'playing'
+    && state.phase === 'player_discard'
     && state.currentPlayer === 0
     && state.playerRiichi
     && state.awaitingDiscard
-    && isWinningHand(state.players[0].hand)
+    && isWinningHand(state.players[0].hand, state.players[0].melds.length)
 }
 
 export function declareWin(state: GameState, type: 'tsumo' | 'ron'): GameState {
@@ -741,6 +1171,7 @@ export function declareWin(state: GameState, type: 'tsumo' | 'ron'): GameState {
   return {
     ...state,
     status: 'win',
+    phase: 'win',
     winType: type,
     awaitingDiscard: false,
     riichiDeclareMode: false,
@@ -777,7 +1208,12 @@ export function playAutomaticTurn(
   state: GameState,
   random: () => number = Math.random,
 ): GameState {
-  if (state.currentPlayer === 0 || state.status !== 'playing' || state.pendingRonTile) return state
+  if (
+    state.currentPlayer === 0
+    || state.status !== 'playing'
+    || state.phase !== 'enemy_auto'
+    || state.pendingRonTile
+  ) return state
   const afterDraw = beginTurn(state)
   if (afterDraw.status !== 'playing' || !afterDraw.awaitingDiscard) return afterDraw
   const hand = afterDraw.players[afterDraw.currentPlayer].hand

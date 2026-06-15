@@ -9,6 +9,8 @@ interface RiverViewProps {
 }
 
 export function RiverView({ player, seat, active, lastDiscardId }: RiverViewProps) {
+  const visibleRiver = player.river.filter((record) => record.calledBy === undefined)
+
   return (
     <section className={`river-panel river-${seat} ${active ? 'active-player' : ''}`}>
       <div className="player-label">
@@ -17,15 +19,15 @@ export function RiverView({ player, seat, active, lastDiscardId }: RiverViewProp
         {seat !== 'south' && <span className="hand-count">手牌 {player.hand.length}</span>}
       </div>
       <div className="river" aria-label={`${player.name}の捨て牌`}>
-        {player.river.map((tile) => (
+        {visibleRiver.map((record) => (
           <TileView
-            key={tile.id}
-            tile={tile}
+            key={record.id}
+            tile={record.tile}
             usage="river"
-            className={tile.id === lastDiscardId ? 'latest-discard' : ''}
+            className={record.tile.id === lastDiscardId ? 'latest-discard' : ''}
           />
         ))}
-        {player.river.length === 0 && <span className="river-empty">まだ捨て牌なし</span>}
+        {visibleRiver.length === 0 && <span className="river-empty">まだ捨て牌なし</span>}
       </div>
     </section>
   )
