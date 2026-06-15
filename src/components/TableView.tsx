@@ -33,6 +33,13 @@ interface TableViewProps {
 
 const SEATS = ['south', 'east', 'north', 'west'] as const
 
+function calledTileDirection(from: Meld['from']) {
+  if (from === 3) return 'from-left'
+  if (from === 2) return 'from-across'
+  if (from === 1) return 'from-right'
+  return 'from-self'
+}
+
 function MeldView({ melds }: { melds: Meld[] }) {
   if (melds.length === 0) return null
   return (
@@ -46,7 +53,9 @@ function MeldView({ melds }: { melds: Meld[] }) {
                 key={tile.id}
                 tile={tile}
                 usage="mini"
-                className={tile.id === meld.calledTile.id ? 'called-tile' : ''}
+                className={tile.id === meld.calledTile.id
+                  ? `called-tile ${calledTileDirection(meld.from)}`
+                  : ''}
               />
             ))}
           </div>

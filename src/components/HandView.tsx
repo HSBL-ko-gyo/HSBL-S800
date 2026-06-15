@@ -553,7 +553,11 @@ export function HandView({
           </span>
         ))}
       </div>
-      <div className="desktop-block-guide" aria-label={`ブロック補助: ${blockSummary}`}>
+      <div
+        className="desktop-block-guide"
+        aria-label={`ブロック補助: ${blockSummary}`}
+        style={{ '--block-tile-count': displayed.length } as CSSProperties}
+      >
         {handBlockSegments.map((block) => (
           <span
             className={`block-guide-item block-guide-item-${block.kind}`}

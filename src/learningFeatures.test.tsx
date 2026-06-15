@@ -351,6 +351,10 @@ describe('reaction declaration MVP', () => {
     expect(called.players[3].river[0].calledBy).toBe(0)
     expect(called.players[3].river[0].callType).toBe('pon')
     expect(getVisibleTiles(called).filter((tile) => tile.code === '5m')).toHaveLength(3)
+
+    const html = renderTable(called)
+    expect(html).toContain('called-tile from-left')
+    expect(html).toContain('--block-tile-count:11')
   })
 
   it('declares chi only from kamicha and keeps riichi unavailable after calling', () => {

@@ -335,7 +335,7 @@ h1 {
   --block-tile-width: clamp(30px, 5.4vw, 56px);
   --block-gap: clamp(2px, .35vw, 5px);
   display: grid;
-  grid-template-columns: repeat(14, var(--block-tile-width));
+  grid-template-columns: repeat(var(--block-tile-count, 14), var(--block-tile-width));
   width: max-content;
   max-width: 100%;
   min-height: 17px;
@@ -402,7 +402,52 @@ h1 {
 }
 
 .meld .tile.called-tile {
+  z-index: 1;
   box-shadow: 0 0 0 2px rgba(232, 200, 121, .72), 0 4px 12px rgba(0, 0, 0, .32);
+  transform-origin: center;
+}
+
+.meld .tile.called-tile::after {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  width: 15px;
+  height: 15px;
+  place-items: center;
+  border: 1px solid rgba(255, 253, 246, .8);
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--felt-dark);
+  font-family: system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, .32);
+}
+
+.meld .tile.called-tile.from-left {
+  transform: rotate(-8deg) translateY(-2px);
+}
+
+.meld .tile.called-tile.from-left::after {
+  content: "←";
+}
+
+.meld .tile.called-tile.from-across {
+  transform: translateY(-4px);
+}
+
+.meld .tile.called-tile.from-across::after {
+  content: "↑";
+}
+
+.meld .tile.called-tile.from-right {
+  transform: rotate(8deg) translateY(-2px);
+}
+
+.meld .tile.called-tile.from-right::after {
+  content: "→";
 }
 
 .reaction-panel {
@@ -1404,6 +1449,13 @@ h1 {
     padding: 4px 5px;
   }
   .meld > span { font-size: 10px; }
+  .meld .tile.called-tile::after {
+    top: -5px;
+    right: -5px;
+    width: 13px;
+    height: 13px;
+    font-size: 9px;
+  }
   .reaction-panel {
     width: calc(100vw - 34px);
     align-items: stretch;
