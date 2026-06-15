@@ -835,6 +835,44 @@ h1 {
   .game-layout .riichi-button { padding-block: 8px; }
 }
 
+@media (min-width: 1400px) {
+  .app-shell { width: min(1640px, 100%); }
+
+  .game-layout {
+    grid-template-columns: minmax(780px, 900px) minmax(460px, 1fr);
+    justify-content: center;
+    gap: clamp(24px, 2.25vw, 40px);
+  }
+
+  .play-column {
+    width: 100%;
+    max-width: 900px;
+  }
+
+  .game-layout .learning-panel {
+    gap: 10px;
+    padding: 16px;
+  }
+
+  .game-layout .learning-metrics span { font-size: 14px; }
+  .game-layout .learning-label { font-size: 13px; }
+  .game-layout .hint-chip,
+  .game-layout .hint-empty { font-size: 14px; }
+  .game-layout .evaluation-card { padding: 13px 14px; }
+  .game-layout .evaluation-grade { font-size: 23px; }
+  .game-layout .evaluation-meta,
+  .game-layout .evaluation-deltas { font-size: 13px; }
+  .game-layout .evaluation-card p { font-size: 16px; line-height: 1.65; }
+  .game-layout .yaku-info-card { padding: 12px; }
+  .game-layout .yaku-info-card h4 { font-size: 17px; }
+  .game-layout .yaku-info-card p { font-size: 14px; line-height: 1.6; }
+  .game-layout .example-label,
+  .game-layout .example-groups small { font-size: 10px; }
+  .game-layout .tile.tiny { --tile-width: 20px; }
+  .game-layout .feedback-message { font-size: 14px; }
+  .game-layout .riichi-button { font-size: 16px; }
+}
+
 @media (max-width: 780px) {
   .table-board {
     grid-template-columns: 1fr 1fr;
