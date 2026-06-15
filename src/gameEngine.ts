@@ -114,6 +114,24 @@ export interface DiscardLog {
   explanation: string
 }
 
+export interface ScoreYaku {
+  name: string
+  han: number
+}
+
+export interface RoundScore {
+  winType: 'tsumo' | 'ron'
+  han: number
+  fu: number
+  basePoints: number
+  totalPoints: number
+  limitName: string | null
+  dealer: boolean
+  paymentText: string
+  yaku: ScoreYaku[]
+  note: string
+}
+
 export type HandPlanKind = 'push' | 'fast' | 'value' | 'patient'
 
 export interface HandPlanAdvice {
@@ -165,6 +183,7 @@ export interface GameState {
   status: 'playing' | 'draw' | 'win'
   phase: GamePhase
   winType: 'tsumo' | 'ron' | null
+  roundScore: RoundScore | null
   wall: Tile[]
   players: PlayerState[]
   currentPlayer: PlayerId
@@ -193,6 +212,7 @@ const PLAYER_DATA: Array<{ name: string; wind: Wind }> = [
 ]
 
 const DEAD_WALL_SIZE = 14
+const ROUND_WIND: Wind = '東'
 
 const CODE_ORDER = new Map<TileCode, number>(
   TILE_CODES.map((code, index) => [code, index]),
@@ -210,6 +230,51 @@ function toCounts(tiles: Array<Tile | TileCode>): number[] {
   const counts = Array<number>(34).fill(0)
   for (const tile of tiles) counts[CODE_ORDER.get(asCode(tile)) ?? 0] += 1
   return counts
+}
+
+function ceilToHundred(value: number): number {
+  return Math.ceil(value / 100) * 100
+}
+
+function isTerminalOrHonor(code: TileCode): boolean {
+  return code.length === 1 || code[0] === '1' || code[0] === '9'
+}
+
+function countSequenceCandidates(counts: number[]): number {
+  let total = 0
+  for (const offset of [0, 9, 18]) {
+    for (let start = 1; start <= 7; start += 1) {
+      if (
+        counts[offset + start - 1] > 0
+        && counts[offset + start] > 0
+        && counts[offset + start + 1] > 0
+      ) total += 1
+    }
+  }
+  return total
+}
+
+function hasStraight(counts: number[], offset: number): boolean {
+  return [1, 4, 7].every((start) =>
+    [start, start + 1, start + 2].every((number) => counts[offset + number - 1] > 0),
+  )
+}
+
+function getValuePairFu(
+  counts: number[],
+  playerWindTile: Extract<TileCode, 'E' | 'S' | 'W' | 'N'>,
+  roundWindTile: Extract<TileCode, 'E' | 'S' | 'W' | 'N'>,
+): number {
+  let fu = 0
+  for (const code of ['E', 'S', 'W', 'N'] as const) {
+    if (counts[CODE_ORDER.get(code) ?? 27] < 2) continue
+    if (code === playerWindTile) fu += 2
+    if (code === roundWindTile) fu += 2
+  }
+  for (const code of ['P', 'F', 'C'] as const) {
+    if (counts[CODE_ORDER.get(code) ?? 27] >= 2) fu += 2
+  }
+  return fu
 }
 
 export function createTile(code: TileCode, suffix = 'test'): Tile {
@@ -724,6 +789,150 @@ export function buildDiscardEvaluation(
   }
 }
 
+function windCode(wind: Wind): Extract<TileCode, 'E' | 'S' | 'W' | 'N'> {
+  const codes: Record<Wind, Extract<TileCode, 'E' | 'S' | 'W' | 'N'>> = {
+    東: 'E',
+    南: 'S',
+    西: 'W',
+    北: 'N',
+  }
+  return codes[wind]
+}
+
+function limitScore(han: number, fu: number): { basePoints: number; limitName: string | null } {
+  const rawBase = fu * (2 ** (han + 2))
+  if (han >= 13) return { basePoints: 8000, limitName: '役満' }
+  if (han >= 11) return { basePoints: 6000, limitName: '三倍満' }
+  if (han >= 8) return { basePoints: 4000, limitName: '倍満' }
+  if (han >= 6) return { basePoints: 3000, limitName: '跳満' }
+  if (han >= 5 || rawBase >= 2000) return { basePoints: 2000, limitName: '満貫' }
+  return { basePoints: rawBase, limitName: null }
+}
+
+export function calculateWinningScore(
+  hand: Array<Tile | TileCode>,
+  winType: 'tsumo' | 'ron',
+  options: { riichi?: boolean; playerWind?: Wind; roundWind?: Wind } = {},
+): RoundScore {
+  const codes = tileCodes(hand)
+  const counts = toCounts(codes)
+  const yaku: ScoreYaku[] = []
+  const playerWind = options.playerWind ?? '東'
+  const roundWind = options.roundWind ?? ROUND_WIND
+  const playerWindTile = windCode(playerWind)
+  const roundWindTile = windCode(roundWind)
+  const dealer = playerWind === '東'
+  const pairs = counts.filter((count) => count >= 2).length
+  const tripletIndexes = counts.flatMap((count, index) => count >= 3 ? [index] : [])
+  const sevenPairs = pairs === 7
+  const valuePairFu = getValuePairFu(counts, playerWindTile, roundWindTile)
+  const pinfuLike = !sevenPairs
+    && tripletIndexes.length === 0
+    && valuePairFu === 0
+    && countSequenceCandidates(counts) >= 4
+
+  if (options.riichi) yaku.push({ name: '立直', han: 1 })
+  if (winType === 'tsumo') yaku.push({ name: '門前清自摸和', han: 1 })
+  if (codes.every((code) => !isTerminalOrHonor(code))) yaku.push({ name: '断么九', han: 1 })
+  if (pinfuLike) yaku.push({ name: '平和', han: 1 })
+  if (sevenPairs) yaku.push({ name: '七対子', han: 2 })
+
+  for (const code of ['E', 'S', 'W', 'N'] as const) {
+    const count = counts[CODE_ORDER.get(code) ?? 0]
+    if (count < 3) continue
+    const windHan = (code === playerWindTile ? 1 : 0) + (code === roundWindTile ? 1 : 0)
+    if (windHan === 2) yaku.push({ name: 'ダブ東', han: 2 })
+    else if (windHan === 1) yaku.push({ name: `${tileName(code)}風`, han: 1 })
+  }
+
+  for (const code of ['P', 'F', 'C'] as const) {
+    if (counts[CODE_ORDER.get(code) ?? 0] >= 3) yaku.push({ name: `役牌 ${tileName(code)}`, han: 1 })
+  }
+
+  const suitedSuits = [0, 1, 2].filter((suit) =>
+    counts.slice(suit * 9, suit * 9 + 9).some((count) => count > 0),
+  )
+  const honorCount = counts.slice(27).reduce((sum, count) => sum + count, 0)
+  if (suitedSuits.length === 1 && honorCount > 0) yaku.push({ name: '混一色', han: 3 })
+  if (suitedSuits.length === 1 && honorCount === 0) yaku.push({ name: '清一色', han: 6 })
+
+  if ([0, 9, 18].some((offset) => hasStraight(counts, offset))) {
+    yaku.push({ name: '一気通貫', han: 2 })
+  }
+
+  const hasSanshoku = Array.from({ length: 7 }, (_, index) => index + 1).some((start) =>
+    [0, 9, 18].every((offset) =>
+      [start, start + 1, start + 2].every((number) => counts[offset + number - 1] > 0),
+    ),
+  )
+  if (hasSanshoku) yaku.push({ name: '三色同順', han: 2 })
+
+  if (!sevenPairs && tripletIndexes.length >= 4) yaku.push({ name: '対々和', han: 2 })
+
+  let fu: number
+  if (sevenPairs) {
+    fu = 25
+  } else if (pinfuLike && winType === 'tsumo') {
+    fu = 20
+  } else {
+    const tripletFu = tripletIndexes.reduce((sum, index) => {
+      const code = TILE_CODES[index]
+      return sum + (isTerminalOrHonor(code) ? 8 : 4)
+    }, 0)
+    fu = 20 + valuePairFu + tripletFu + (winType === 'tsumo' ? 2 : 10)
+    fu = Math.max(30, Math.ceil(fu / 10) * 10)
+  }
+
+  const han = yaku.reduce((sum, item) => sum + item.han, 0)
+  if (han === 0) {
+    return {
+      winType,
+      han,
+      fu,
+      basePoints: 0,
+      totalPoints: 0,
+      limitName: null,
+      dealer,
+      paymentText: '役なし',
+      yaku,
+      note: '簡易判定では役が見つかりません。形だけのロン/ツモ候補かもしれません。',
+    }
+  }
+
+  const { basePoints, limitName } = limitScore(han, fu)
+  let totalPoints: number
+  let paymentText: string
+  if (dealer && winType === 'tsumo') {
+    const payment = ceilToHundred(basePoints * 2)
+    totalPoints = payment * 3
+    paymentText = `親ツモ ${payment}点オール`
+  } else if (dealer) {
+    totalPoints = ceilToHundred(basePoints * 6)
+    paymentText = `親ロン ${totalPoints}点`
+  } else if (winType === 'tsumo') {
+    const childPayment = ceilToHundred(basePoints)
+    const dealerPayment = ceilToHundred(basePoints * 2)
+    totalPoints = childPayment * 2 + dealerPayment
+    paymentText = `ツモ 親${dealerPayment}点 / 子${childPayment}点`
+  } else {
+    totalPoints = ceilToHundred(basePoints * 4)
+    paymentText = `ロン ${totalPoints}点`
+  }
+
+  return {
+    winType,
+    han,
+    fu,
+    basePoints,
+    totalPoints,
+    limitName,
+    dealer,
+    paymentText,
+    yaku,
+    note: 'ドラ・本場・供託なしの簡易計算',
+  }
+}
+
 function asPlayerId(index: number): PlayerId {
   return (index % 4) as PlayerId
 }
@@ -867,6 +1076,7 @@ export function createInitialGame(random: () => number = Math.random): GameState
     status: 'playing',
     phase: 'player_draw',
     winType: null,
+    roundScore: null,
     wall,
     players: players.map((player) => ({ ...player, hand: sortTiles(player.hand) })),
     currentPlayer: 0,
@@ -897,7 +1107,7 @@ export function beginTurn(state: GameState): GameState {
     || state.phase === 'declare_reaction'
   ) return state
   if (state.wall.length === 0) {
-    return { ...state, status: 'draw', phase: 'draw', drawnTileId: null, riichiDeclareMode: false }
+    return { ...state, status: 'draw', phase: 'draw', winType: null, roundScore: null, drawnTileId: null, riichiDeclareMode: false }
   }
 
   const wall = [...state.wall]
@@ -1175,11 +1385,17 @@ export function declareReaction(
     if (!event.canRon || !isWinningHand([...restored.players[0].hand, event.tile], restored.players[0].melds.length)) {
       return failedCall(state, type, event, 'その牌ではロンできません')
     }
+    const roundScore = calculateWinningScore([...restored.players[0].hand, event.tile], 'ron', {
+      riichi: restored.playerRiichi,
+      playerWind: restored.players[0].wind,
+      roundWind: ROUND_WIND,
+    })
     return {
       ...restored,
       status: 'win',
       phase: 'win',
       winType: 'ron',
+      roundScore,
       awaitingDiscard: false,
       pendingRonTile: null,
       pendingReactionEvents: [],
@@ -1305,11 +1521,20 @@ export function canDeclareTsumo(state: GameState): boolean {
 export function declareWin(state: GameState, type: 'tsumo' | 'ron'): GameState {
   const allowed = type === 'tsumo' ? canDeclareTsumo(state) : Boolean(state.pendingRonTile)
   if (!allowed) return state
+  const winningHand = type === 'ron' && state.pendingRonTile
+    ? [...state.players[0].hand, state.pendingRonTile]
+    : state.players[0].hand
+  const roundScore = calculateWinningScore(winningHand, type, {
+    riichi: state.playerRiichi,
+    playerWind: state.players[0].wind,
+    roundWind: ROUND_WIND,
+  })
   return {
     ...state,
     status: 'win',
     phase: 'win',
     winType: type,
+    roundScore,
     awaitingDiscard: false,
     riichiDeclareMode: false,
     pendingRonTile: null,

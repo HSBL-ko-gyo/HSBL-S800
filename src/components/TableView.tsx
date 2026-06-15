@@ -306,6 +306,26 @@ export function TableView({
           <span className="result-kicker">{game.status === 'draw' ? '牌山終了' : '練習結果'}</span>
           <h2>{game.status === 'draw' ? '流局' : game.winType === 'tsumo' ? 'ツモ' : 'ロン'}</h2>
           <p>{game.status === 'draw' ? '最後まで打ち切りました。打牌を振り返りましょう。' : '和了しました。打牌を振り返りましょう。'}</p>
+          {game.status === 'win' && game.roundScore && (
+            <section className="score-result" aria-label="点数計算">
+              <div className="score-main">
+                <span>{game.roundScore.paymentText}</span>
+                <strong>{game.roundScore.totalPoints.toLocaleString()}点</strong>
+              </div>
+              <div className="score-breakdown">
+                <span><b>{game.roundScore.han}飜</b></span>
+                <span><b>{game.roundScore.fu}符</b></span>
+                {game.roundScore.limitName && <span><b>{game.roundScore.limitName}</b></span>}
+              </div>
+              <div className="score-yaku-list">
+                {game.roundScore.yaku.length === 0 && <span>役なし候補</span>}
+                {game.roundScore.yaku.map((yaku) => (
+                  <span key={yaku.name}>{yaku.name} <b>{yaku.han}飜</b></span>
+                ))}
+              </div>
+              <p className="score-note">{game.roundScore.note}</p>
+            </section>
+          )}
           <DiscardHistory logs={game.discardLogs} />
           <button className="restart-button" type="button" onClick={onRestart}>もう一局</button>
           <aside className="result-affiliate" aria-label="おすすめ麻雀漫画">

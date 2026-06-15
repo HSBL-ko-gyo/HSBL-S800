@@ -9,6 +9,7 @@ import {
   buildDiscardEvaluation,
   buildHandPlanAdvice,
   calculateShanten,
+  calculateWinningScore,
   canDeclareTsumo,
   canRiichiAfterDiscard,
   createInitialGame,
@@ -260,6 +261,37 @@ describe('riichi learning flow', () => {
     expect(html).toContain('https://amzn.to/4ouAjr3')
     expect(html).toContain('https://m.media-amazon.com/images/I/51nbs2kF08L.jpg')
     expect(html).toContain('rel="sponsored noreferrer"')
+  })
+
+  it('shows the score result when the round ends in a win', () => {
+    const state: GameState = {
+      ...gameWithHand([
+        '2m', '3m', '4m',
+        '6m', '7m', '8m',
+        '3p', '4p', '5p',
+        '4s', '5s', '6s',
+        '2s', '2s',
+      ]),
+      status: 'win',
+      phase: 'win',
+      winType: 'tsumo',
+      awaitingDiscard: false,
+      playerRiichi: true,
+      roundScore: calculateWinningScore([
+        '2m', '3m', '4m',
+        '6m', '7m', '8m',
+        '3p', '4p', '5p',
+        '4s', '5s', '6s',
+        '2s', '2s',
+      ], 'tsumo', { riichi: true }),
+    }
+    const html = renderTable(state)
+
+    expect(html).toContain('score-result')
+    expect(html).toContain('親ツモ 2600点オール')
+    expect(html).toContain('7,800点')
+    expect(html).toContain('4飜')
+    expect(html).toContain('20符')
   })
 
   it('shows waits after riichi without showing a duplicated missed-riichi message', () => {

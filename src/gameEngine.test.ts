@@ -1,15 +1,26 @@
 import { describe, expect, it } from 'vitest'
 import {
   beginTurn,
+  calculateWinningScore,
   chooseAutomaticDiscard,
   createInitialGame,
+  createTile,
   createTileSet,
+  declareWin,
   discardTile,
   playAutomaticTurn,
   skipReactionReview,
+  type TileCode,
 } from './gameEngine'
 
 const fixedRandom = () => 0.42
+const simplePinfuTsumo: TileCode[] = [
+  '2m', '3m', '4m',
+  '6m', '7m', '8m',
+  '3p', '4p', '5p',
+  '4s', '5s', '6s',
+  '2s', '2s',
+]
 
 describe('game engine', () => {
   it('creates four copies of every tile', () => {
@@ -23,6 +34,31 @@ describe('game engine', () => {
     const game = createInitialGame(fixedRandom)
     expect(game.players.map((player) => player.hand.length)).toEqual([13, 13, 13, 13])
     expect(game.wall).toHaveLength(70)
+  })
+
+  it('calculates a simple dealer riichi pinfu tsumo score', () => {
+    const score = calculateWinningScore(simplePinfuTsumo, 'tsumo', { riichi: true })
+    expect(score.han).toBe(4)
+    expect(score.fu).toBe(20)
+    expect(score.totalPoints).toBe(7800)
+    expect(score.paymentText).toBe('親ツモ 2600点オール')
+    expect(score.yaku.map((yaku) => yaku.name)).toEqual(['立直', '門前清自摸和', '断么九', '平和'])
+  })
+
+  it('stores the calculated score when declaring tsumo', () => {
+    const game = createInitialGame(fixedRandom)
+    const hand = simplePinfuTsumo.map((code, index) => createTile(code, `win-${index}`))
+    const ready = {
+      ...game,
+      players: game.players.map((player, index) => index === 0 ? { ...player, hand } : player),
+      phase: 'player_discard' as const,
+      awaitingDiscard: true,
+      drawnTileId: hand.at(-1)?.id ?? null,
+      playerRiichi: true,
+    }
+    const won = declareWin(ready, 'tsumo')
+    expect(won.status).toBe('win')
+    expect(won.roundScore?.paymentText).toBe('親ツモ 2600点オール')
   })
 
   it('draws, discards, and passes the turn', () => {

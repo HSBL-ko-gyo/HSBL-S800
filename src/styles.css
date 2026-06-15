@@ -1037,6 +1037,60 @@ h1 {
   font-size: 12px;
 }
 
+.score-result {
+  margin-top: 15px;
+  padding: 14px;
+  border: 1px solid rgba(232, 200, 121, .36);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, .16);
+  text-align: left;
+}
+
+.score-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: rgba(247, 242, 228, .7);
+  font-size: 12px;
+}
+
+.score-main strong {
+  color: var(--gold);
+  font-family: 'Shippori Mincho B1', serif;
+  font-size: clamp(28px, 5vw, 42px);
+  line-height: 1;
+}
+
+.score-breakdown,
+.score-yaku-list {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.score-breakdown span,
+.score-yaku-list span {
+  padding: 5px 9px;
+  border: 1px solid rgba(247, 242, 228, .12);
+  border-radius: 7px;
+  background: rgba(247, 242, 228, .06);
+  color: rgba(247, 242, 228, .72);
+  font-size: 11px;
+}
+
+.score-breakdown b,
+.score-yaku-list b {
+  color: var(--ivory);
+}
+
+.score-note {
+  margin-top: 9px;
+  color: rgba(247, 242, 228, .46);
+  font-size: 10px;
+}
+
 .discard-history {
   margin-top: 16px;
   text-align: left;
