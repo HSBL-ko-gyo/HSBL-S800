@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import type { Tile } from '../gameEngine'
 import { sortTiles } from '../gameEngine'
 import { TileView } from './TileView'
@@ -33,12 +33,14 @@ export function HandView({
     selectedTileId: null as string | null,
   })
   const [selectedTileId, setSelectedTileId] = useState<string | null>(null)
+  const [selectedLift, setSelectedLift] = useState(0)
   const drawnTile = tiles.find((tile) => tile.id === drawnTileId)
   const concealed = sortTiles(tiles.filter((tile) => tile.id !== drawnTileId))
   const displayed = drawnTile ? [...concealed, drawnTile] : concealed
 
   useEffect(() => {
     setSelectedTileId(null)
+    setSelectedLift(0)
   }, [drawnTileId, canDiscard])
 
   useEffect(() => {
@@ -47,6 +49,7 @@ export function HandView({
     const cancelSelection = (event: globalThis.PointerEvent) => {
       if (handRef.current?.contains(event.target as Node)) return
       setSelectedTileId(null)
+      setSelectedLift(0)
     }
 
     document.addEventListener('pointerdown', cancelSelection)
@@ -58,10 +61,20 @@ export function HandView({
     onDiscard(tile)
   }
 
-  const tileIdAtPoint = (clientX: number, clientY: number) =>
-    document.elementFromPoint(clientX, clientY)
-      ?.closest<HTMLElement>('[data-hand-tile-id]')
-      ?.dataset.handTileId ?? null
+  const tileIdAtX = (clientX: number) => {
+    const slots = [...(handRef.current?.querySelectorAll<HTMLElement>('[data-hand-tile-id]') ?? [])]
+    let nearest: { id: string; distance: number } | null = null
+
+    for (const slot of slots) {
+      const rect = slot.getBoundingClientRect()
+      const distance = Math.abs(clientX - (rect.left + rect.width / 2))
+      if (!nearest || distance < nearest.distance) {
+        nearest = { id: slot.dataset.handTileId ?? '', distance }
+      }
+    }
+
+    return nearest?.id || null
+  }
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (!canDiscard || !window.matchMedia('(max-width: 480px)').matches) return
@@ -79,6 +92,7 @@ export function HandView({
       selectedTileId: tileId,
     }
     setSelectedTileId(tileId)
+    setSelectedLift(0)
   }
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
@@ -86,19 +100,23 @@ export function HandView({
     if (gesture.pointerId !== event.pointerId) return
     event.preventDefault()
 
-    const hoveredTileId = tileIdAtPoint(event.clientX, event.clientY)
+    const hoveredTileId = tileIdAtX(event.clientX)
     if (hoveredTileId && hoveredTileId !== gesture.selectedTileId) {
       gesture.selectedTileId = hoveredTileId
       setSelectedTileId(hoveredTileId)
     }
 
-    if (event.clientY <= gesture.startY - 36) {
+    const upwardDistance = Math.max(0, gesture.startY - event.clientY)
+    setSelectedLift(Math.min(upwardDistance, 42))
+
+    if (upwardDistance >= 48) {
       const tileToDiscard = displayed.find((tile) => tile.id === gesture.selectedTileId)
       gesture.pointerId = -1
       if (event.currentTarget.hasPointerCapture(event.pointerId)) {
         event.currentTarget.releasePointerCapture(event.pointerId)
       }
       setSelectedTileId(null)
+      setSelectedLift(0)
       if (tileToDiscard) onDiscard(tileToDiscard)
     }
   }
@@ -111,11 +129,13 @@ export function HandView({
     }
 
     gesture.pointerId = -1
+    setSelectedLift(0)
   }
 
   const cancelGesture = (event: PointerEvent<HTMLDivElement>) => {
     if (gestureRef.current.pointerId !== event.pointerId) return
     gestureRef.current.pointerId = -1
+    setSelectedLift(0)
   }
 
   return (
@@ -123,6 +143,7 @@ export function HandView({
       <div
         className={`hand ${canDiscard ? 'is-active' : ''}`}
         ref={handRef}
+        style={{ '--selected-lift': `${selectedLift}px` } as CSSProperties}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={finishGesture}

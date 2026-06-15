@@ -913,19 +913,38 @@ h1 {
 }
 
 @media (max-width: 480px) {
-  .app-shell { padding-top: 14px; }
-  .app-header { margin-bottom: 12px; }
+  .app-shell { padding-top: 10px; }
+  .app-header { margin-bottom: 8px; }
   .subtitle { display: none; }
   .speed-chip { padding: 6px 9px; font-size: 10px; }
-  .table-board { gap: 7px; }
+  .table-board {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "north center"
+      "west east"
+      "south south";
+    gap: 6px;
+    padding: 8px;
+  }
   .player-label { gap: 5px; margin-bottom: 7px; }
   .hand-count { display: none; }
-  .river { grid-template-columns: repeat(6, 23px); min-height: 80px; }
+  .river { grid-template-columns: repeat(6, 23px); min-height: 56px; }
   .tile.river { --tile-width: 23px; }
-  .table-center { width: 124px; border-radius: 15px; }
-  .table-center strong { font-size: 14px; }
-  .wall-counter b { font-size: 25px; }
-  .hand-zone { margin-top: 12px; }
+  .table-center {
+    width: 106px;
+    height: 100%;
+    min-height: 94px;
+    aspect-ratio: auto;
+    margin: 0;
+    justify-self: end;
+    border-radius: 13px;
+  }
+  .round-label { font-size: 9px; }
+  .table-center strong { min-height: 18px; margin: 3px 0; font-size: 12px; }
+  .wall-counter { font-size: 9px; }
+  .wall-counter b { font-size: 21px; }
+  .table-center small { margin-top: 4px; font-size: 8px; }
+  .hand-zone { margin-top: 7px; }
   .hand {
     min-height: 82px;
     justify-content: center;
@@ -948,11 +967,14 @@ h1 {
   .hand .tile.drawn { margin-left: 2px; }
   .hand .tile.selected {
     z-index: 10;
-    transform: translateY(-15px) scale(1.65);
+    transform: translateY(calc(var(--selected-lift, 0px) * -1)) scale(1.65);
     box-shadow: 0 4px 0 var(--amber), 0 0 0 2px var(--gold), 0 10px 18px rgba(0, 0, 0, .55);
+    transition: transform .04s linear, box-shadow .12s, opacity .12s;
   }
   .hand .tile.selected:hover,
-  .hand .tile.selected:active { transform: translateY(-15px) scale(1.65); }
+  .hand .tile.selected:active {
+    transform: translateY(calc(var(--selected-lift, 0px) * -1)) scale(1.65);
+  }
   .hand-scroll-hint {
     display: block;
     min-height: 14px;
@@ -962,7 +984,7 @@ h1 {
     letter-spacing: .05em;
   }
   .hand-action-buttons .win-button { min-width: 144px; }
-  .learning-panel { gap: 8px; margin-top: 8px; padding: 9px; border-radius: 13px; }
+  .learning-panel { gap: 6px; margin-top: 5px; padding: 8px; border-radius: 13px; }
   .learning-metrics { gap: 5px; }
   .learning-metrics span { flex: 1; padding: 5px 6px; font-size: 9.5px; text-align: center; }
   .yaku-hints,
