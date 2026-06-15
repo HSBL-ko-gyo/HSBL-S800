@@ -180,6 +180,29 @@ describe('riichi learning flow', () => {
     expect(html).toContain('リーチ宣言')
   })
 
+  it('renders a static 14-tile overview and a five-tile mobile control rail', () => {
+    const state = gameWithHand([...tenpaiBase, 'E'])
+    const html = renderToStaticMarkup(
+      <TableView
+        game={state}
+        onDiscard={() => undefined}
+        onRiichiMode={() => undefined}
+        onTsumo={() => undefined}
+        onRon={() => undefined}
+        onRestart={() => undefined}
+      />,
+    )
+    const overviewStart = html.indexOf('<div class="mobile-hand-overview"')
+    const railStart = html.indexOf('<div class="hand mobile-hand-rail', overviewStart)
+    const desktopStart = html.indexOf('<div class="hand desktop-hand', railStart)
+    const overviewHtml = html.slice(overviewStart, railStart)
+    const railHtml = html.slice(railStart, desktopStart)
+
+    expect(overviewHtml.match(/mobile-overview-slot/g)).toHaveLength(14)
+    expect(overviewHtml).not.toContain('<button')
+    expect(railHtml.match(/hand-tile-slot/g)).toHaveLength(5)
+  })
+
   it('shows waits after riichi without showing a duplicated missed-riichi message', () => {
     const declaring = setRiichiDeclareMode(gameWithHand([...tenpaiBase, 'E']), true)
     const established = discardHumanTile(declaring, declaring.players[0].hand[13].id)

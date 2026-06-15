@@ -37,6 +37,7 @@ export function HandView({
     pointerId: -1,
     startX: 0,
     startY: 0,
+    startTileIndex: -1,
     selectedTileId: null as string | null,
     selectedAtPointerDown: false,
     moved: false,
@@ -48,7 +49,15 @@ export function HandView({
   const drawnTile = tiles.find((tile) => tile.id === drawnTileId)
   const concealed = sortTiles(tiles.filter((tile) => tile.id !== drawnTileId))
   const displayed = drawnTile ? [...concealed, drawnTile] : concealed
-  const selectedTile = displayed.find((tile) => tile.id === selectedTileId)
+  const selectedIndex = displayed.findIndex((tile) => tile.id === selectedTileId)
+  const mobileFocusIndex = selectedIndex >= 0
+    ? selectedIndex
+    : Math.max(0, displayed.length - 1)
+  const mobileWindowStart = Math.max(0, Math.min(
+    mobileFocusIndex - 2,
+    Math.max(0, displayed.length - 5),
+  ))
+  const mobileTiles = displayed.slice(mobileWindowStart, mobileWindowStart + 5)
 
   useEffect(() => {
     setSelectedTileId(null)
@@ -75,21 +84,6 @@ export function HandView({
     onDiscard(tile)
   }
 
-  const tileIdAtX = (clientX: number) => {
-    const slots = [...(handRef.current?.querySelectorAll<HTMLElement>('[data-hand-tile-id]') ?? [])]
-    let nearest: { id: string; distance: number } | null = null
-
-    for (const slot of slots) {
-      const rect = slot.getBoundingClientRect()
-      const distance = Math.abs(clientX - (rect.left + rect.width / 2))
-      if (!nearest || distance < nearest.distance) {
-        nearest = { id: slot.dataset.handTileId ?? '', distance }
-      }
-    }
-
-    return nearest?.id || null
-  }
-
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (!canDiscard || !window.matchMedia('(max-width: 480px)').matches) return
     if (event.pointerType === 'mouse' && event.button !== 0) return
@@ -97,6 +91,8 @@ export function HandView({
       .closest<HTMLElement>('[data-hand-tile-id]')
       ?.dataset.handTileId
     if (!tileId) return
+    const tileIndex = displayed.findIndex((tile) => tile.id === tileId)
+    if (tileIndex < 0) return
 
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
@@ -104,6 +100,7 @@ export function HandView({
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
+      startTileIndex: tileIndex,
       selectedTileId: tileId,
       selectedAtPointerDown: selectedTileId === tileId,
       moved: false,
@@ -129,7 +126,12 @@ export function HandView({
     if (upwardDistance >= 10) gesture.verticalLocked = true
 
     if (!gesture.verticalLocked) {
-      const hoveredTileId = tileIdAtX(event.clientX)
+      const horizontalDistance = event.clientX - gesture.startX
+      const targetIndex = Math.max(0, Math.min(
+        displayed.length - 1,
+        gesture.startTileIndex + Math.round(horizontalDistance / 42),
+      ))
+      const hoveredTileId = displayed[targetIndex]?.id
       if (hoveredTileId && hoveredTileId !== gesture.selectedTileId) {
         gesture.selectedTileId = hoveredTileId
         gesture.selectedAtPointerDown = false
@@ -196,20 +198,26 @@ export function HandView({
       aria-label="あなたの手牌"
       style={{ '--selected-lift': `${selectedLift}px` } as CSSProperties}
     >
-      <div className={`hand-selection-preview ${selectedTile ? 'has-selection' : ''}`} aria-live="polite">
-        {selectedTile
-          ? <TileView tile={selectedTile} usage="hand" className="hand-preview-tile" />
-          : <span className="hand-preview-placeholder">牌を選択</span>}
+      <div className="mobile-hand-overview" aria-label="手牌全体">
+        {displayed.map((tile) => (
+          <span className="mobile-overview-slot" key={`overview-${tile.id}`}>
+            <TileView
+              tile={tile}
+              usage="hand"
+              className={tile.id === selectedTileId ? 'overview-selected' : ''}
+            />
+          </span>
+        ))}
       </div>
       <div
-        className={`hand ${canDiscard ? 'is-active' : ''}`}
+        className={`hand mobile-hand-rail ${canDiscard ? 'is-active' : ''}`}
         ref={handRef}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={finishGesture}
         onPointerCancel={cancelGesture}
       >
-        {displayed.map((tile) => (
+        {mobileTiles.map((tile) => (
           <span className="hand-tile-slot" data-hand-tile-id={tile.id} key={tile.id}>
             <TileView
               tile={tile}
@@ -225,10 +233,24 @@ export function HandView({
           </span>
         ))}
       </div>
+      <div className={`hand desktop-hand ${canDiscard ? 'is-active' : ''}`}>
+        {displayed.map((tile) => (
+          <span className="hand-tile-slot" key={`desktop-${tile.id}`}>
+            <TileView
+              tile={tile}
+              usage="hand"
+              className={tile.id === drawnTileId ? 'drawn' : ''}
+              visualState={canDiscard ? undefined : 'static'}
+              disabled={!canDiscard}
+              onClick={canDiscard ? handleTileClick : undefined}
+            />
+          </span>
+        ))}
+      </div>
       <span className="hand-scroll-hint">
         {selectedTileId
-          ? '下段を横になぞって選択・上スワイプ または ダブルタップで打牌'
-          : '下段をタップまたは横になぞって選択'}
+          ? '下段を横スライドで選択・上スワイプ または ダブルタップで打牌'
+          : '上段で全体確認・下段を横スライドして選択'}
       </span>
       {(canTsumo || canRon || showRiichiButton) && (
         <div className="hand-action-buttons">
