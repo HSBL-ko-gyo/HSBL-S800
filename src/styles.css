@@ -1042,15 +1042,15 @@ h1 {
   }
   .hand.mobile-hand-rail {
     --rail-width: min(356px, calc(100vw - 34px));
-    --rail-tile-width: 40px;
+    --rail-tile-width: 46px;
     --rail-gap: 2px;
     display: flex;
     position: relative;
     width: var(--rail-width);
-    min-height: 106px;
+    min-height: 116px;
     margin: 0 auto;
     justify-content: flex-start;
-    padding: 42px 0 10px;
+    padding: 46px 0 10px;
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: none;
