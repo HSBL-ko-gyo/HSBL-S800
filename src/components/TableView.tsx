@@ -45,6 +45,7 @@ export function TableView({
   )
   const yakuHints = getYakuHints(game.players[0].hand)
   const riichiWaits = getRiichiWaitTiles(game)
+  const hasFourRowRiver = game.players.some((player) => player.river.length >= 19)
   const statusText = game.status === 'draw'
     ? '流局'
     : game.status === 'win'
@@ -69,7 +70,7 @@ export function TableView({
     <>
       <div className="game-layout">
         <div className="play-column">
-          <main className="table-board">
+          <main className={`table-board ${hasFourRowRiver ? 'is-late-round' : ''}`}>
             {[2, 3, 1, 0].map((playerIndex) => {
               const player = game.players[playerIndex]
               const lastDiscardId = game.lastDiscard?.playerIndex === playerIndex

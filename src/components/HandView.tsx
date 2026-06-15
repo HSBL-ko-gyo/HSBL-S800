@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type MouseEvent, type PointerEvent } from 'react'
 import type { Tile } from '../gameEngine'
 import { sortTiles } from '../gameEngine'
 import { TileView } from './TileView'
@@ -27,6 +27,14 @@ export function HandView({
   onTsumo,
 }: HandViewProps) {
   const handRef = useRef<HTMLDivElement>(null)
+  const dragRef = useRef({
+    pointerId: -1,
+    startX: 0,
+    startY: 0,
+    startScrollLeft: 0,
+    dragging: false,
+  })
+  const suppressClickRef = useRef(false)
   const drawnTile = tiles.find((tile) => tile.id === drawnTileId)
   const concealed = sortTiles(tiles.filter((tile) => tile.id !== drawnTileId))
   const displayed = drawnTile ? [...concealed, drawnTile] : concealed
@@ -36,9 +44,72 @@ export function HandView({
     handRef.current.scrollLeft = handRef.current.scrollWidth
   }, [drawnTileId])
 
+  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return
+    const hand = handRef.current
+    if (!hand || hand.scrollWidth <= hand.clientWidth) return
+
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startScrollLeft: hand.scrollLeft,
+      dragging: false,
+    }
+    suppressClickRef.current = false
+  }
+
+  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    const hand = handRef.current
+    const drag = dragRef.current
+    if (!hand || drag.pointerId !== event.pointerId) return
+
+    const deltaX = event.clientX - drag.startX
+    const deltaY = event.clientY - drag.startY
+    if (!drag.dragging) {
+      if (Math.abs(deltaX) < 5 && Math.abs(deltaY) < 5) return
+      if (Math.abs(deltaY) > Math.abs(deltaX)) return
+
+      drag.dragging = true
+      suppressClickRef.current = true
+      event.currentTarget.setPointerCapture(event.pointerId)
+    }
+
+    event.preventDefault()
+    hand.scrollLeft = drag.startScrollLeft - deltaX
+  }
+
+  const finishPointerDrag = (event: PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current
+    if (drag.pointerId !== event.pointerId) return
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+    drag.pointerId = -1
+    drag.dragging = false
+    window.setTimeout(() => {
+      suppressClickRef.current = false
+    }, 0)
+  }
+
+  const handleClickCapture = (event: MouseEvent<HTMLDivElement>) => {
+    if (!suppressClickRef.current) return
+    event.preventDefault()
+    event.stopPropagation()
+    suppressClickRef.current = false
+  }
+
   return (
     <section className="hand-zone" aria-label="あなたの手牌">
-      <div className={`hand ${canDiscard ? 'is-active' : ''}`} ref={handRef}>
+      <div
+        className={`hand ${canDiscard ? 'is-active' : ''}`}
+        ref={handRef}
+        onClickCapture={handleClickCapture}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={finishPointerDrag}
+        onPointerCancel={finishPointerDrag}
+      >
         {displayed.map((tile) => (
           <TileView
             key={tile.id}

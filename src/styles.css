@@ -788,6 +788,21 @@ h1 {
 
   .play-column .tile.hand { --tile-width: clamp(42px, 3.6vw, 52px); }
 
+  .table-board.is-late-round {
+    grid-template-rows: 190px 150px 190px;
+    min-height: 0;
+  }
+
+  .table-board.is-late-round .river-panel {
+    align-self: stretch;
+    padding: 8px;
+  }
+
+  .table-board.is-late-round .player-label { margin-bottom: 6px; }
+  .table-board.is-late-round .river { grid-template-columns: repeat(6, 23px); gap: 4px 3px; min-height: 0; }
+  .table-board.is-late-round .tile.river { --tile-width: 23px; }
+  .table-board.is-late-round .table-center { width: 150px; }
+
   .game-layout .learning-panel {
     position: sticky;
     top: 16px;
@@ -919,11 +934,11 @@ h1 {
     overflow-x: auto;
     overflow-y: hidden;
     overscroll-behavior-x: contain;
-    scroll-behavior: smooth;
     scroll-padding-inline: 12px;
     scrollbar-color: rgba(232, 200, 121, .45) rgba(0, 0, 0, .08);
     scrollbar-width: thin;
-    touch-action: pan-x;
+    touch-action: pan-y pinch-zoom;
+    -webkit-overflow-scrolling: touch;
   }
   .hand .tile.hand {
     --tile-width: 44px;
