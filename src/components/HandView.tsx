@@ -336,10 +336,13 @@ export function HandView({
       <span className="mobile-hand-guide rail-guide">拡大操作・ここを横スライド</span>
       <div className="mobile-hand-control">
         <span className="discard-threshold-guide" aria-hidden="true">
-          <span className="discard-threshold-label">
-            {discardProgress >= .9 ? '離すと打牌' : 'ここまで上げると打牌'}
+          <span className="discard-drop-zone">
+            <span className="discard-drop-fill" />
+            <span className="discard-drop-icon">↑</span>
+            <span className="discard-drop-text">
+              {discardProgress >= .9 ? '捨てる' : '上へ'}
+            </span>
           </span>
-          <span className="discard-threshold-line" />
         </span>
         <div
           className={`hand mobile-hand-rail ${canDiscard ? 'is-active' : ''}`}
