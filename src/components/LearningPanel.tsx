@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { shantenLabel, type DiscardEvaluation, type ImprovementTile, type Tile, type YakuHint } from '../gameEngine'
 import { DiscardEvaluationPanel } from './DiscardEvaluationPanel'
 import { HandPlanPanel } from './HandPlanPanel'
@@ -38,13 +39,23 @@ export function LearningPanel({
   riichiDeclareMode,
   onRiichiMode,
 }: LearningPanelProps) {
+  const [metricsHidden, setMetricsHidden] = useState(false)
+
   return (
     <aside className="learning-panel">
       <DiscardEvaluationPanel evaluation={evaluation} />
 
       <div className="learning-metrics">
-        <span>現在: <b>{shantenLabel(shanten)}</b></span>
-        <span>受け入れ: <b>{improvementTypeCount}種{improvementTileCount}枚</b></span>
+        <span>現在: <b>{metricsHidden ? '---' : shantenLabel(shanten)}</b></span>
+        <span>受け入れ: <b>{metricsHidden ? '---' : `${improvementTypeCount}種${improvementTileCount}枚`}</b></span>
+        <button
+          className="metric-privacy-toggle"
+          type="button"
+          aria-pressed={metricsHidden}
+          onClick={() => setMetricsHidden((hidden) => !hidden)}
+        >
+          {metricsHidden ? '数値を表示' : '数値を隠す'}
+        </button>
       </div>
 
       <HandPlanPanel advice={handPlan} />

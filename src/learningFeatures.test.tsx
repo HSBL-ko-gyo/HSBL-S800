@@ -241,6 +241,8 @@ describe('riichi learning flow', () => {
     expect(html).toContain('desktop-block-guide')
     expect(html).toContain('desktop-call-toggle')
     expect(html).not.toContain('mobile-call-toggle')
+    expect(html).toContain('metric-privacy-toggle')
+    expect(html).toContain('aria-pressed="false"')
     expect(html).toMatch(/block-guide-item-(meld|pair|ryanmen|kanchan|penchan|floating)/)
     expect(overviewHtml.match(/mobile-overview-slot/g)).toHaveLength(14)
     expect(overviewHtml).not.toContain('<button')
