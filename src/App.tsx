@@ -55,12 +55,14 @@ export default function App() {
       <header className="app-header">
         <div>
           <p className="eyebrow">SOLO SPEED MAHJONG</p>
-          <h1>爆速麻雀</h1>
+          <div className="title-row">
+            <h1>爆速麻雀</h1>
+            <div className="mobile-round-summary" aria-label={`東一局 山残り${game.wall.length}枚`}>
+              <b>東一局</b>
+              <span>山 {game.wall.length}枚</span>
+            </div>
+          </div>
           <p className="subtitle">待つのは、自分の番だけ。</p>
-        </div>
-        <div className="speed-chip">
-          <span className="pulse-dot" />
-          敵 50–150ms
         </div>
       </header>
 

@@ -65,27 +65,13 @@ h1 {
   font-size: 12px;
 }
 
-.speed-chip {
+.title-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border: 1px solid rgba(232, 200, 121, .35);
-  border-radius: 999px;
-  background: rgba(0, 0, 0, .16);
-  color: rgba(247, 242, 228, .8);
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
+  gap: 12px;
 }
 
-.pulse-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #8ce3aa;
-  box-shadow: 0 0 0 4px rgba(140, 227, 170, .12);
-}
+.mobile-round-summary { display: none; }
 
 .game-layout,
 .play-column {
@@ -918,7 +904,29 @@ h1 {
   .app-shell { padding-top: 10px; }
   .app-header { margin-bottom: 8px; }
   .subtitle { display: none; }
-  .speed-chip { padding: 6px 9px; font-size: 10px; }
+  .title-row { gap: 9px; }
+  .mobile-round-summary {
+    display: flex;
+    flex-direction: column;
+    min-width: 65px;
+    padding: 4px 8px;
+    border: 1px solid rgba(232, 200, 121, .38);
+    border-radius: 9px;
+    background: rgba(0, 0, 0, .16);
+    line-height: 1.15;
+    white-space: nowrap;
+  }
+  .mobile-round-summary b {
+    color: var(--gold);
+    font-family: 'Shippori Mincho B1', serif;
+    font-size: 10px;
+    letter-spacing: .08em;
+  }
+  .mobile-round-summary span {
+    margin-top: 2px;
+    color: rgba(247, 242, 228, .68);
+    font-size: 8px;
+  }
   .table-board {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas:
@@ -934,25 +942,7 @@ h1 {
   .hand-count { display: none; }
   .river { grid-template-columns: repeat(6, 21px); gap: 3px 2px; min-height: 58px; }
   .tile.river { --tile-width: 21px; }
-  .table-center {
-    position: absolute;
-    z-index: 5;
-    top: 50%;
-    left: 50%;
-    width: 72px;
-    height: 72px;
-    min-height: 0;
-    aspect-ratio: auto;
-    margin: 0;
-    border-radius: 11px;
-    transform: translate(-50%, -50%);
-  }
-  .round-label { font-size: 7px; letter-spacing: .08em; }
-  .table-center strong { min-height: 13px; margin: 2px 0; font-size: 9px; }
-  .riichi-status { margin-bottom: 2px; padding: 1px 5px; font-size: 7px; }
-  .wall-counter { gap: 2px; font-size: 7px; }
-  .wall-counter b { font-size: 16px; }
-  .table-center small { margin-top: 2px; font-size: 6px; }
+  .table-center { display: none; }
   .hand-zone { margin-top: 7px; }
   .hand {
     min-height: 82px;
