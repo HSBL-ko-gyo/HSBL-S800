@@ -345,7 +345,7 @@ describe('yaku memo cards', () => {
       />,
     )
     expect(html).toContain('役メモ')
-    expect(html).toContain('断么九候補')
+    expect(html).toContain('断么九')
     expect(html).toContain('(タンヤオ)')
     expect(html).toContain('tile tiny')
     expect(html.indexOf('打牌評価')).toBeLessThan(html.indexOf('役メモ'))
@@ -355,7 +355,7 @@ describe('yaku memo cards', () => {
     const hand = codesToTiles(['E', 'E', '2m', '3m', '4m', '3p', '4p', '5p', '4s', '5s', '6s', '7p', '8p'])
     const hints = getYakuHints(hand)
     const html = renderToStaticMarkup(<YakuInfoPanel hints={hints} hand={hand} />)
-    expect(html).toContain('役牌候補')
+    expect(html).toContain('役牌')
     expect(html).toContain('(ヤクハイ)')
     expect(html).not.toContain('リーチ')
   })
