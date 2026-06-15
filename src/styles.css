@@ -902,11 +902,15 @@ h1 {
 
 @media (max-width: 480px) {
   .app-shell { padding-top: 10px; }
-  .app-header { margin-bottom: 8px; }
+  .app-header { position: relative; margin-bottom: 8px; }
+  .app-header > div { width: 100%; }
   .subtitle { display: none; }
-  .title-row { gap: 10px; }
+  .title-row { display: block; }
   .mobile-round-summary {
     display: flex;
+    position: absolute;
+    top: 0;
+    right: 0;
     flex-direction: column;
     min-width: 92px;
     padding: 6px 11px;
