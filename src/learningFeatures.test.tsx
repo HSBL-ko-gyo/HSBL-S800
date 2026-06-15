@@ -98,6 +98,22 @@ describe('riichi learning flow', () => {
     const tsumoState = { ...gameWithHand([...tenpaiBase, '5m']), playerRiichi: true }
     expect(canDeclareTsumo(tsumoState)).toBe(true)
 
+    const tsumoHtml = renderToStaticMarkup(
+      <TableView
+        game={tsumoState}
+        onDiscard={() => undefined}
+        onRiichiMode={() => undefined}
+        onTsumo={() => undefined}
+        onRon={() => undefined}
+        onRestart={() => undefined}
+      />,
+    )
+    const tsumoHandStart = tsumoHtml.indexOf('<section class="hand-zone"')
+    const tsumoHandEnd = tsumoHtml.indexOf('</section>', tsumoHandStart)
+    const tsumoHandHtml = tsumoHtml.slice(tsumoHandStart, tsumoHandEnd)
+    expect(tsumoHandHtml).toContain('>ツモ</button>')
+    expect(tsumoHtml.match(/>ツモ<\/button>/g)).toHaveLength(1)
+
     const game = createInitialGame(() => 0.42)
     const humanHand = codesToTiles(tenpaiBase)
     const winningDiscard = createTile('5m', 'ron')
@@ -126,7 +142,10 @@ describe('riichi learning flow', () => {
         onRestart={() => undefined}
       />,
     )
-    expect(html).toMatch(/<section class="hand-zone"[\s\S]*<div class="hand-action-buttons">[\s\S]*>ロン<\/button>[\s\S]*<\/section>/)
+    const ronHandStart = html.indexOf('<section class="hand-zone"')
+    const ronHandEnd = html.indexOf('</section>', ronHandStart)
+    const ronHandHtml = html.slice(ronHandStart, ronHandEnd)
+    expect(ronHandHtml).toContain('>ロン</button>')
     expect(html.match(/>ロン<\/button>/g)).toHaveLength(1)
   })
 
