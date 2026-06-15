@@ -988,6 +988,11 @@ h1 {
     --tile-width: calc((100vw - 58px) / 14);
     z-index: 1;
   }
+  .hand .tile.hand:not(.selected):hover,
+  .hand .tile.hand:not(.selected):active {
+    transform: none;
+    box-shadow: 0 calc(var(--tile-width) * .09) 0 var(--amber), 0 calc(var(--tile-width) * .13) calc(var(--tile-width) * .18) rgba(0, 0, 0, .45);
+  }
   .hand .tile.drawn { margin-left: 2px; }
   .hand .tile.selected {
     z-index: 10;
