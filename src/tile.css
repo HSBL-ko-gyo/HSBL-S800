@@ -52,6 +52,24 @@ button.tile:active {
   outline-offset: 3px;
 }
 
+.tile .tile-reading {
+  position: absolute;
+  top: calc(var(--tile-width) * .1);
+  left: 50%;
+  max-width: calc(var(--tile-width) * .9);
+  overflow: hidden;
+  transform: translateX(-50%);
+  color: rgba(42, 36, 28, .52);
+  font-family: system-ui, sans-serif;
+  font-size: clamp(5px, calc(var(--tile-width) * .13), 7px);
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 .tile .num {
   font-size: calc(var(--tile-width) * .43);
   line-height: 1.05;
@@ -105,6 +123,13 @@ button.tile:active {
   --tile-width: 21px;
   border-radius: 3px;
   box-shadow: 0 2px 0 var(--amber), 0 3px 4px rgba(0, 0, 0, .35);
+}
+
+.tile.river .tile-reading,
+.tile.mini .tile-reading,
+.tile.tiny .tile-reading,
+.mobile-hand-overview .tile-reading {
+  display: none;
 }
 
 .tile.latest-discard {

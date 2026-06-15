@@ -485,6 +485,8 @@ describe('tile usage classes', () => {
     const riverHtml = renderToStaticMarkup(<TileView tile={tile} usage="river" />)
     const tinyHtml = renderToStaticMarkup(<TileView tile={tile} usage="tiny" />)
     expect(handHtml).toContain('tile man hand')
+    expect(handHtml).toContain('tile-reading')
+    expect(handHtml).toContain('ウー')
     expect(riverHtml).toContain('tile man river')
     expect(riverHtml).not.toContain(' mini')
     expect(tinyHtml).toContain('tile man tiny')

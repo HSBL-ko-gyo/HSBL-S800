@@ -2,6 +2,7 @@ import type { Tile, TileCode } from '../gameEngine'
 import { tileName } from '../gameEngine'
 
 const KANJI = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九']
+const NUMBER_READINGS = ['', 'イー', 'リャン', 'サン', 'スー', 'ウー', 'ロー', 'チー', 'パー', 'キュウ']
 const HONORS: Partial<Record<TileCode, string>> = {
   E: '東', S: '南', W: '西', N: '北', F: '發', C: '中',
 }
@@ -28,13 +29,14 @@ function tileContent(code: TileCode) {
 
   const number = Number(code[0])
   const suit = code[1]
+  const reading = <span className="tile-reading" aria-hidden="true">{NUMBER_READINGS[number]}</span>
   if (suit === 'm') {
-    return <><span className="num">{KANJI[number]}</span><span className="suit">萬</span></>
+    return <>{reading}<span className="num">{KANJI[number]}</span><span className="suit">萬</span></>
   }
   if (suit === 'p') {
-    return <><span className="num">{number}</span><span className="suit">筒</span></>
+    return <>{reading}<span className="num">{number}</span><span className="suit">筒</span></>
   }
-  return <><span className="num">{number}</span><span className="suit">索</span></>
+  return <>{reading}<span className="num">{number}</span><span className="suit">索</span></>
 }
 
 export function TileView({

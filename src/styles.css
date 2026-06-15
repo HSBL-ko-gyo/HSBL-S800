@@ -1350,6 +1350,7 @@ h1 {
   .mobile-call-toggle {
     left: 12px;
     top: 98px;
+    bottom: auto;
     display: inline-flex;
     flex-direction: row;
     min-width: 0;
