@@ -9,6 +9,11 @@ const HONORS: Partial<Record<TileCode, string>> = {
 const HONOR_READINGS: Partial<Record<TileCode, string>> = {
   E: 'トン', S: 'ナン', W: 'シャー', N: 'ペー', P: 'ハク', F: 'ハツ', C: 'チュン',
 }
+const SUIT_READINGS: Record<string, string> = {
+  m: 'マン',
+  p: 'ピン',
+  s: 'ソウ',
+}
 
 export type TileVisualState = 'picked-right' | 'picked-wrong' | 'dim' | 'static'
 
@@ -38,13 +43,14 @@ function tileContent(code: TileCode) {
   const number = Number(code[0])
   const suit = code[1]
   const numberReading = <span className="tile-reading" aria-hidden="true">{NUMBER_READINGS[number]}</span>
+  const suitReading = <span className="tile-suit-reading" aria-hidden="true">{SUIT_READINGS[suit]}</span>
   if (suit === 'm') {
-    return <>{numberReading}<span className="num">{KANJI[number]}</span><span className="suit">萬</span></>
+    return <>{numberReading}<span className="num">{KANJI[number]}</span><span className="suit">萬</span>{suitReading}</>
   }
   if (suit === 'p') {
-    return <>{numberReading}<span className="num">{number}</span><span className="suit">筒</span></>
+    return <>{numberReading}<span className="num">{number}</span><span className="suit">筒</span>{suitReading}</>
   }
-  return <>{numberReading}<span className="num">{number}</span><span className="suit">索</span></>
+  return <>{numberReading}<span className="num">{number}</span><span className="suit">索</span>{suitReading}</>
 }
 
 export function TileView({
