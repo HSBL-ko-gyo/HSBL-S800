@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   buildHandPlanAdvice,
   calculateShanten,
@@ -149,6 +150,7 @@ export function TableView({
   onDeclareReaction,
   onRestart,
 }: TableViewProps) {
+  const [learningHintsHidden, setLearningHintsHidden] = useState(false)
   const humanTurn = game.status === 'playing'
     && game.phase === 'player_discard'
     && game.currentPlayer === 0
@@ -253,6 +255,7 @@ export function TableView({
             playerRiichi={game.playerRiichi}
             riichiDeclareMode={game.riichiDeclareMode}
             callsDisabled={game.callsDisabled}
+            blockGuidesHidden={learningHintsHidden}
             hint={handHint}
             onDiscard={onDiscard}
             onRon={onRon}
@@ -331,6 +334,8 @@ export function TableView({
           riichiButtonEnabled={riichiButtonEnabled}
           playerRiichi={game.playerRiichi}
           riichiDeclareMode={game.riichiDeclareMode}
+          metricsHidden={learningHintsHidden}
+          onMetricsHiddenChange={setLearningHintsHidden}
           onRiichiMode={onRiichiMode}
         />
       </div>
