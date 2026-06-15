@@ -369,6 +369,11 @@ h1 {
 .block-guide-item-penchan { color: rgba(240, 182, 107, .94); background: rgba(226, 159, 67, .13); }
 .block-guide-item-floating { color: rgba(247, 242, 228, .48); background: rgba(247, 242, 228, .06); }
 
+.block-guide-hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .hand-scroll-hint { display: none; }
 
 .meld-area {
