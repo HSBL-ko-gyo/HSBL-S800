@@ -11,7 +11,10 @@ export function YakuInfoCard({ hint, hand }: YakuInfoCardProps) {
   const info = YAKU_INFO[hint]
   return (
     <article className="yaku-info-card">
-      <h4>{info.name}</h4>
+      <h4>
+        {info.name}
+        <span className="yaku-reading">{info.reading}</span>
+      </h4>
       <p>{info.description} {info.condition}</p>
       <p className="yaku-current">{getYakuCurrentReason(hint, hand)}</p>
       <div className="yaku-examples">

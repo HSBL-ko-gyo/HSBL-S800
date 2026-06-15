@@ -9,6 +9,7 @@ export interface YakuExampleRow {
 
 export interface YakuInfoDefinition {
   name: string
+  reading: string
   description: string
   condition: string
   examples: YakuExampleRow[]
@@ -17,6 +18,7 @@ export interface YakuInfoDefinition {
 export const YAKU_INFO: Record<YakuHint, YakuInfoDefinition> = {
   '断么九': {
     name: '断么九候補',
+    reading: 'タンヤオこうほ',
     description: '2〜8の数牌だけで作る役。',
     condition: '1・9・字牌を使わない。',
     examples: [
@@ -26,6 +28,7 @@ export const YAKU_INFO: Record<YakuHint, YakuInfoDefinition> = {
   },
   '役牌候補': {
     name: '役牌候補',
+    reading: 'ヤクハイこうほ',
     description: '白・發・中、場風や自風を3枚集める役。',
     condition: '対象の字牌を刻子にする。',
     examples: [
@@ -34,6 +37,7 @@ export const YAKU_INFO: Record<YakuHint, YakuInfoDefinition> = {
   },
   '七対子候補': {
     name: '七対子候補',
+    reading: 'チートイツこうほ',
     description: '同じ牌のペアを7組作る役。',
     condition: '異なる7種類を2枚ずつそろえる。',
     examples: [
@@ -42,6 +46,7 @@ export const YAKU_INFO: Record<YakuHint, YakuInfoDefinition> = {
   },
   '混一色気味': {
     name: '混一色候補',
+    reading: 'ホンイツこうほ',
     description: '1種類の数牌と字牌だけで作る役。',
     condition: '他の2種類の数牌を手放す。',
     examples: [
@@ -51,6 +56,7 @@ export const YAKU_INFO: Record<YakuHint, YakuInfoDefinition> = {
   },
   '一気通貫候補': {
     name: '一気通貫候補',
+    reading: 'イッツーこうほ',
     description: '同じ色で123・456・789をそろえる役。',
     condition: '3つの順子を同一色で完成させる。',
     examples: [
@@ -59,6 +65,7 @@ export const YAKU_INFO: Record<YakuHint, YakuInfoDefinition> = {
   },
   '三色同順候補': {
     name: '三色同順候補',
+    reading: 'サンショクこうほ',
     description: '萬子・筒子・索子で同じ順子を作る役。',
     condition: '同じ数字並びを3色でそろえる。',
     examples: [
@@ -67,6 +74,7 @@ export const YAKU_INFO: Record<YakuHint, YakuInfoDefinition> = {
   },
   '平和寄り': {
     name: '平和候補',
+    reading: 'ピンフこうほ',
     description: '順子4つと雀頭で作る、順子中心の役。',
     condition: '役牌でない雀頭と両面待ちが基本。',
     examples: [

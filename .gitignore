@@ -3,6 +3,7 @@ dist
 *.local
 .vite
 .wrangler
+.codex-remote-attachments/
 *.tsbuildinfo
 vite.*.log
 wrangler.*.log
