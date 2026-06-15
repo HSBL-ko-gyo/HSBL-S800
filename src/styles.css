@@ -588,45 +588,70 @@ h1 {
 }
 
 .learning-metrics {
-  display: flex;
+  display: block;
   grid-column: 1 / -1;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 
-.learning-metrics span {
-  padding: 6px 10px;
+.metric-privacy-toggle {
+  display: grid;
+  width: 100%;
+  min-height: 32px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 36px;
+  align-items: stretch;
+  overflow: hidden;
+  padding: 0;
   border: 1px solid rgba(247, 242, 228, .13);
   border-radius: 7px;
   background: rgba(0, 0, 0, .15);
   color: rgba(247, 242, 228, .7);
+  cursor: pointer;
+}
+
+.metric-chip {
+  display: grid;
+  min-width: 0;
+  align-items: center;
+  padding: 6px 10px;
+  border-right: 1px solid rgba(247, 242, 228, .1);
   font-size: 11px;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .learning-metrics b { color: var(--ivory); }
 
-.metric-privacy-toggle {
-  min-height: 30px;
-  padding: 6px 10px;
-  border: 1px solid rgba(232, 200, 121, .28);
-  border-radius: 7px;
-  background: rgba(232, 200, 121, .1);
-  color: rgba(247, 242, 228, .82);
-  font-size: 11px;
-  font-weight: 900;
-  cursor: pointer;
+.metric-privacy-icon {
+  display: grid;
+  place-items: center;
+  color: rgba(232, 200, 121, .86);
+  background: rgba(232, 200, 121, .08);
+}
+
+.metric-privacy-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .metric-privacy-toggle[aria-pressed="true"] {
   border-color: rgba(247, 242, 228, .22);
   background: rgba(0, 0, 0, .22);
+}
+
+.metric-privacy-toggle[aria-pressed="true"] .metric-privacy-icon {
   color: var(--gold);
+  background: rgba(0, 0, 0, .18);
 }
 
 .metric-privacy-toggle:hover,
 .metric-privacy-toggle:focus-visible {
   border-color: rgba(232, 200, 121, .52);
-  background: rgba(232, 200, 121, .16);
+  background: rgba(232, 200, 121, .1);
+  outline: none;
 }
 
 .hand-plan-card {
@@ -1641,7 +1666,7 @@ h1 {
   }
 
   .learning-panel { padding: 17px; }
-  .learning-metrics span { font-size: 12px; }
+  .metric-chip { font-size: 12px; }
   .learning-label { font-size: 11px; }
   .hint-chip,
   .hint-empty { font-size: 12px; }
@@ -1704,12 +1729,10 @@ h1 {
   .game-layout .action-buttons { grid-column: 1; }
 
   .game-layout .learning-metrics {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
+    display: block;
   }
 
-  .game-layout .learning-metrics span {
+  .game-layout .metric-chip {
     padding: 5px 7px;
     font-size: 11px;
     text-align: center;
@@ -1759,7 +1782,7 @@ h1 {
     padding: 16px;
   }
 
-  .game-layout .learning-metrics span,
+  .game-layout .metric-chip,
   .game-layout .metric-privacy-toggle { font-size: 14px; }
   .game-layout .learning-label { font-size: 13px; }
   .game-layout .hint-chip,
@@ -2158,9 +2181,9 @@ h1 {
   }
   .learning-panel > .action-buttons { display: none; }
   .learning-panel { gap: 6px; margin-top: 5px; padding: 8px; border-radius: 13px; }
-  .learning-metrics { gap: 5px; }
-  .learning-metrics span { flex: 1; padding: 5px 6px; font-size: 9.5px; text-align: center; }
-  .metric-privacy-toggle { flex: 1 0 100%; padding: 5px 6px; font-size: 10px; }
+  .metric-privacy-toggle { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 32px; }
+  .metric-chip { padding: 5px 6px; font-size: 9.5px; }
+  .metric-privacy-icon svg { width: 16px; height: 16px; }
   .yaku-hints,
   .hand-plan-card,
   .evaluation-card { padding: 9px; }

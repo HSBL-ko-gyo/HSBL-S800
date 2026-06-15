@@ -46,15 +46,30 @@ export function LearningPanel({
       <DiscardEvaluationPanel evaluation={evaluation} />
 
       <div className="learning-metrics">
-        <span>現在: <b>{metricsHidden ? '---' : shantenLabel(shanten)}</b></span>
-        <span>受け入れ: <b>{metricsHidden ? '---' : `${improvementTypeCount}種${improvementTileCount}枚`}</b></span>
         <button
           className="metric-privacy-toggle"
           type="button"
           aria-pressed={metricsHidden}
+          aria-label={metricsHidden ? 'シャンテン数と受け入れを表示する' : 'シャンテン数と受け入れを隠す'}
           onClick={() => setMetricsHidden((hidden) => !hidden)}
         >
-          {metricsHidden ? '数値を表示' : '数値を隠す'}
+          <span className="metric-chip">現在: <b>{metricsHidden ? '---' : shantenLabel(shanten)}</b></span>
+          <span className="metric-chip">受け入れ: <b>{metricsHidden ? '---' : `${improvementTypeCount}種${improvementTileCount}枚`}</b></span>
+          <span className="metric-privacy-icon" aria-hidden="true">
+            {metricsHidden ? (
+              <svg viewBox="0 0 24 24" role="img">
+                <path d="M3 3l18 18" />
+                <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                <path d="M9.4 5.4A9.8 9.8 0 0 1 12 5c5.2 0 8.5 4.4 9.4 6.1a1.8 1.8 0 0 1 0 1.8 12.6 12.6 0 0 1-2.1 2.7" />
+                <path d="M6.4 6.7a12.6 12.6 0 0 0-3.8 4.4 1.8 1.8 0 0 0 0 1.8C3.5 14.6 6.8 19 12 19a9.7 9.7 0 0 0 4.1-.9" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" role="img">
+                <path d="M2.6 11.1C3.5 9.4 6.8 5 12 5s8.5 4.4 9.4 6.1a1.8 1.8 0 0 1 0 1.8C20.5 14.6 17.2 19 12 19s-8.5-4.4-9.4-6.1a1.8 1.8 0 0 1 0-1.8Z" />
+                <circle cx="12" cy="12" r="2.7" />
+              </svg>
+            )}
+          </span>
         </button>
       </div>
 
