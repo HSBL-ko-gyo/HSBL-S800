@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import type { Tile, TileCode } from '../gameEngine'
 import { sortTiles, TILE_CODES } from '../gameEngine'
+import { useMediaQuery } from '../useMediaQuery'
 import { TileView } from './TileView'
 
 const DISCARD_SWIPE_THRESHOLD = 48
@@ -220,6 +221,7 @@ export function HandView({
   const handBlockSegments = buildHandBlockSegments(handBlocks, displayed)
   const blockSummary = handBlocks.map((block) => block.label).join('、')
   const blockTactic = getBlockTactic(handBlocks)
+  const isMobileLayout = useMediaQuery('(max-width: 480px)')
 
   const syncOverviewWindow = () => {
     const rail = handRef.current
@@ -454,14 +456,16 @@ export function HandView({
         '--discard-progress': discardProgress,
       } as CSSProperties}
     >
-      <label className="side-call-toggle mobile-call-toggle" aria-label="鳴き無し">
-        <input
-          type="checkbox"
-          checked={callsDisabled}
-          onChange={(event) => onCallsDisabledMode(event.currentTarget.checked)}
-        />
-        <span>鳴き無し</span>
-      </label>
+      {isMobileLayout && (
+        <label className="side-call-toggle mobile-call-toggle" aria-label="鳴き無し">
+          <input
+            type="checkbox"
+            checked={callsDisabled}
+            onChange={(event) => onCallsDisabledMode(event.currentTarget.checked)}
+          />
+          <span>鳴き無し</span>
+        </label>
+      )}
       <span className="mobile-hand-guide overview-guide">全体表示・ドラッグで移動</span>
       <div
         className="mobile-hand-overview"

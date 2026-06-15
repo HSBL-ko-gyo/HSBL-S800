@@ -234,6 +234,8 @@ describe('riichi learning flow', () => {
     expect(html).not.toContain('5ブロック打法</b><span>3ブロック不足')
     expect(html).toContain('mobile-block-guide')
     expect(html).toContain('desktop-block-guide')
+    expect(html).toContain('desktop-call-toggle')
+    expect(html).not.toContain('mobile-call-toggle')
     expect(html).toMatch(/block-guide-item-(meld|pair|ryanmen|kanchan|penchan|floating)/)
     expect(overviewHtml.match(/mobile-overview-slot/g)).toHaveLength(14)
     expect(overviewHtml).not.toContain('<button')

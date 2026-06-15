@@ -17,6 +17,7 @@ import { HandView } from './HandView'
 import { LearningPanel } from './LearningPanel'
 import { RiverView } from './RiverView'
 import { TileView } from './TileView'
+import { useMediaQuery } from '../useMediaQuery'
 
 interface TableViewProps {
   game: GameState
@@ -117,6 +118,7 @@ export function TableView({
   const yakuHints = getYakuHints(game.players[0].hand)
   const riichiWaits = getRiichiWaitTiles(game)
   const hasFourRowRiver = game.players.some((player) => player.river.length >= 19)
+  const isMobileLayout = useMediaQuery('(max-width: 480px)')
   const statusText = game.status === 'draw'
     ? '流局'
     : game.status === 'win'
@@ -143,7 +145,7 @@ export function TableView({
     <>
       <div className="game-layout">
         <div className="play-column">
-          <CallDisableSwitch enabled={game.callsDisabled} onChange={onCallsDisabledMode} />
+          {!isMobileLayout && <CallDisableSwitch enabled={game.callsDisabled} onChange={onCallsDisabledMode} />}
           <main className={`table-board ${hasFourRowRiver ? 'is-late-round' : ''}`}>
             {[2, 3, 1, 0].map((playerIndex) => {
               const player = game.players[playerIndex]
