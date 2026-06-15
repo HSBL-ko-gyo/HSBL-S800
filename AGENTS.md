@@ -6,10 +6,13 @@
 
 | 用途 | ブランチ | URL |
 | --- | --- | --- |
-| 本番 | `main` | `https://hsbl-s800.pages.dev` |
+| 本番 | `main` | `https://bakusoku-mahjong.hsbl-ko-gyo.com/` |
 | 公開ベータ | `beta` | `https://beta.hsbl-s800.pages.dev` |
 
 Cloudflare Pages project name: `hsbl-s800`
+Cloudflare Pages fallback production URL: `https://hsbl-s800.pages.dev`
+
+LLM/エージェントがユーザーへ本番URLを案内するときは、基本的に `https://bakusoku-mahjong.hsbl-ko-gyo.com/` を使ってください。
 
 ## Deployment Workflow
 
