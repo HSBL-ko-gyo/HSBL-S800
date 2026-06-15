@@ -103,6 +103,7 @@ export default function App() {
           <a href="https://hsbl-ko-gyo.github.io/mahjong-bootcamp/" target="_blank" rel="noreferrer">個別練習は麻雀ブートキャンプへ</a>
           <span aria-hidden="true">・</span>
           <a href="https://hsbl-ko-gyo.github.io/mahjong-bootcamp/" target="_blank" rel="noreferrer">制作：ハシビロ工業</a>
+          <span className="footer-note">バグがあったらすみませんorz 勉強中です</span>
         </span>
       </footer>
     </div>
