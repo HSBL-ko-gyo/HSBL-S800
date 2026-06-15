@@ -790,17 +790,47 @@ h1 {
     position: sticky;
     top: 16px;
     grid-template-columns: 1fr;
-    max-height: calc(100vh - 32px);
+    gap: 8px;
     margin-top: 0;
-    overflow-y: auto;
-    scrollbar-color: rgba(232, 200, 121, .3) transparent;
+    padding: 12px;
   }
 
   .game-layout .learning-metrics,
   .game-layout .feedback-message,
   .game-layout .action-buttons { grid-column: 1; }
 
-  .game-layout .yaku-info-grid { grid-template-columns: 1fr; }
+  .game-layout .learning-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .game-layout .learning-metrics span {
+    padding: 5px 7px;
+    font-size: 11px;
+    text-align: center;
+  }
+
+  .game-layout .yaku-hints,
+  .game-layout .evaluation-card,
+  .game-layout .riichi-wait-panel { padding: 9px 10px; }
+
+  .game-layout .learning-label { margin-bottom: 4px; }
+  .game-layout .evaluation-grade { font-size: 18px; }
+  .game-layout .evaluation-meta,
+  .game-layout .evaluation-deltas { margin-top: 5px; font-size: 10px; }
+  .game-layout .evaluation-card p { margin-top: 5px; font-size: 12px; line-height: 1.55; }
+  .game-layout .yaku-info-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .game-layout .yaku-info-card { padding: 9px; }
+  .game-layout .yaku-info-card h4 { font-size: 13px; }
+  .game-layout .yaku-info-card p { font-size: 10px; line-height: 1.5; }
+  .game-layout .yaku-examples { margin-top: 5px; }
+  .game-layout .yaku-example-row:not(:first-child) { display: none; }
+  .game-layout .example-label { flex-basis: 30px; font-size: 8px; }
+  .game-layout .example-groups small { font-size: 8px; }
+  .game-layout .tile.tiny { --tile-width: 18px; }
+  .game-layout .feedback-message { padding: 6px 8px; font-size: 12px; }
+  .game-layout .riichi-button { padding-block: 8px; }
 }
 
 @media (max-width: 780px) {
@@ -836,14 +866,23 @@ h1 {
   .player-label { gap: 5px; margin-bottom: 7px; }
   .hand-count { display: none; }
   .river { grid-template-columns: repeat(6, 23px); min-height: 80px; }
-  .tile.hand,
   .tile.river { --tile-width: 23px; }
   .table-center { width: 124px; border-radius: 15px; }
   .table-center strong { font-size: 14px; }
   .wall-counter b { font-size: 25px; }
   .hand-zone { margin-top: 12px; }
-  .hand { min-height: 62px; gap: 2px; padding-inline: 1px; }
-  .hand .tile.drawn { margin-left: 3px; }
+  .hand {
+    min-height: 68px;
+    gap: 0;
+    padding: 8px 2px 12px;
+    overflow: visible;
+  }
+  .hand .tile.hand {
+    --tile-width: 29px;
+    margin-left: -4px;
+  }
+  .hand .tile.hand:first-child { margin-left: 0; }
+  .hand .tile.drawn { margin-left: 2px; }
   .hand-action-buttons .win-button { min-width: 144px; }
   .learning-panel { gap: 8px; margin-top: 8px; padding: 9px; border-radius: 13px; }
   .learning-metrics { gap: 5px; }

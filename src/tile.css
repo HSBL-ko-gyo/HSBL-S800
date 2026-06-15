@@ -122,6 +122,5 @@ button.tile:active {
 }
 
 @media (max-width: 480px) {
-  .tile.hand,
   .tile.river { --tile-width: 23px; }
 }
