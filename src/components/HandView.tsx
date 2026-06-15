@@ -48,6 +48,7 @@ export function HandView({
   const drawnTile = tiles.find((tile) => tile.id === drawnTileId)
   const concealed = sortTiles(tiles.filter((tile) => tile.id !== drawnTileId))
   const displayed = drawnTile ? [...concealed, drawnTile] : concealed
+  const selectedTile = displayed.find((tile) => tile.id === selectedTileId)
 
   useEffect(() => {
     setSelectedTileId(null)
@@ -190,11 +191,19 @@ export function HandView({
   }
 
   return (
-    <section className="hand-zone" aria-label="あなたの手牌">
+    <section
+      className="hand-zone"
+      aria-label="あなたの手牌"
+      style={{ '--selected-lift': `${selectedLift}px` } as CSSProperties}
+    >
+      <div className={`hand-selection-preview ${selectedTile ? 'has-selection' : ''}`} aria-live="polite">
+        {selectedTile
+          ? <TileView tile={selectedTile} usage="hand" className="hand-preview-tile" />
+          : <span className="hand-preview-placeholder">牌を選択</span>}
+      </div>
       <div
         className={`hand ${canDiscard ? 'is-active' : ''}`}
         ref={handRef}
-        style={{ '--selected-lift': `${selectedLift}px` } as CSSProperties}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={finishGesture}
@@ -218,8 +227,8 @@ export function HandView({
       </div>
       <span className="hand-scroll-hint">
         {selectedTileId
-          ? '横になぞって選択・上スワイプ または ダブルタップで打牌'
-          : '1回タップで拡大・選択後のダブルタップで打牌'}
+          ? '下段を横になぞって選択・上スワイプ または ダブルタップで打牌'
+          : '下段をタップまたは横になぞって選択'}
       </span>
       {(canTsumo || canRon || showRiichiButton) && (
         <div className="hand-action-buttons">
