@@ -33,6 +33,23 @@ interface TableViewProps {
 }
 
 const SEATS = ['south', 'east', 'north', 'west'] as const
+const AFFILIATE_BOOKS = [
+  {
+    title: 'アカギ',
+    href: 'https://amzn.to/4vRaF2p',
+    image: 'https://m.media-amazon.com/images/I/51nbs2kF08L.jpg',
+  },
+  {
+    title: '天',
+    href: 'https://amzn.to/3Q6xwrD',
+    image: 'https://m.media-amazon.com/images/I/51jGDt+mJkL.jpg',
+  },
+  {
+    title: '咲',
+    href: 'https://amzn.to/4ouAjr3',
+    image: 'https://m.media-amazon.com/images/I/516u8E7Ey+L.jpg',
+  },
+]
 
 function calledTileDirection(from: Meld['from']) {
   if (from === 3) return 'from-left'
@@ -275,6 +292,20 @@ export function TableView({
           <p>{game.status === 'draw' ? '最後まで打ち切りました。打牌を振り返りましょう。' : '和了しました。打牌を振り返りましょう。'}</p>
           <DiscardHistory logs={game.discardLogs} />
           <button className="restart-button" type="button" onClick={onRestart}>もう一局</button>
+          <aside className="result-affiliate" aria-label="おすすめ麻雀漫画">
+            <span>息抜きに麻雀漫画</span>
+            <div className="affiliate-book-list">
+              {AFFILIATE_BOOKS.map((book) => (
+                <a className="affiliate-book-card" key={book.title} href={book.href} target="_blank" rel="sponsored noreferrer">
+                  <span className="affiliate-cover">
+                    <img src={book.image} alt="" loading="lazy" />
+                  </span>
+                  <b>{book.title}</b>
+                </a>
+              ))}
+            </div>
+            <small>Amazonアソシエイトリンクです</small>
+          </aside>
         </section>
       )}
     </>

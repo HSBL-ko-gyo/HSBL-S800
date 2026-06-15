@@ -1053,6 +1053,88 @@ h1 {
   background: var(--gold);
 }
 
+.result-affiliate {
+  display: grid;
+  width: min(100%, 360px);
+  max-width: 100%;
+  margin: 12px auto 0;
+  gap: 7px;
+  padding: 9px 11px 8px;
+  border: 1px solid rgba(247, 242, 228, .12);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, .12);
+  color: rgba(247, 242, 228, .5);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.result-affiliate > span {
+  color: rgba(247, 242, 228, .58);
+  font-weight: 700;
+}
+
+.affiliate-book-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  justify-content: center;
+  gap: 7px;
+}
+
+.affiliate-book-card {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  justify-items: center;
+  padding: 6px 5px 5px;
+  border: 1px solid rgba(232, 200, 121, .2);
+  border-radius: 8px;
+  background: rgba(247, 242, 228, .045);
+  color: rgba(232, 200, 121, .86);
+  text-decoration: none;
+}
+
+.affiliate-book-card:hover,
+.affiliate-book-card:focus-visible {
+  border-color: rgba(232, 200, 121, .42);
+  background: rgba(232, 200, 121, .1);
+  color: var(--gold);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.affiliate-cover {
+  display: grid;
+  width: 38px;
+  height: 54px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgba(247, 242, 228, .08);
+  box-shadow: 0 3px 7px rgba(0, 0, 0, .28);
+}
+
+.affiliate-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.affiliate-book-card b {
+  overflow: hidden;
+  max-width: 100%;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.result-affiliate small {
+  color: rgba(247, 242, 228, .36);
+  font-size: 9px;
+}
+
 .draw-result {
   position: fixed;
   z-index: 10;

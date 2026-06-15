@@ -242,6 +242,24 @@ describe('riichi learning flow', () => {
     expect(railHtml.match(/hand-tile-slot/g)).toHaveLength(14)
   })
 
+  it('shows unobtrusive affiliate links in the round result dialog', () => {
+    const state: GameState = {
+      ...gameWithHand([...tenpaiBase, 'E']),
+      status: 'draw',
+      phase: 'draw',
+      awaitingDiscard: false,
+    }
+    const html = renderTable(state)
+
+    expect(html).toContain('result-affiliate')
+    expect(html).toContain('affiliate-book-card')
+    expect(html).toContain('https://amzn.to/4vRaF2p')
+    expect(html).toContain('https://amzn.to/3Q6xwrD')
+    expect(html).toContain('https://amzn.to/4ouAjr3')
+    expect(html).toContain('https://m.media-amazon.com/images/I/51nbs2kF08L.jpg')
+    expect(html).toContain('rel="sponsored noreferrer"')
+  })
+
   it('shows waits after riichi without showing a duplicated missed-riichi message', () => {
     const declaring = setRiichiDeclareMode(gameWithHand([...tenpaiBase, 'E']), true)
     const established = discardHumanTile(declaring, declaring.players[0].hand[13].id)
