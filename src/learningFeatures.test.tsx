@@ -180,6 +180,26 @@ describe('riichi learning flow', () => {
     expect(html).toContain('リーチ宣言')
   })
 
+  it('keeps disabled riichi button slots during opponent turns', () => {
+    const state = {
+      ...gameWithHand([...tenpaiBase, 'E']),
+      currentPlayer: 1,
+      awaitingDiscard: true,
+    }
+    const html = renderToStaticMarkup(
+      <TableView
+        game={state}
+        onDiscard={() => undefined}
+        onRiichiMode={() => undefined}
+        onTsumo={() => undefined}
+        onRon={() => undefined}
+        onRestart={() => undefined}
+      />,
+    )
+
+    expect(html.match(/class="riichi-button[^"]*"[^>]*disabled/g)).toHaveLength(2)
+  })
+
   it('renders a static 14-tile overview and a connected 14-tile mobile control rail', () => {
     const state = gameWithHand([...tenpaiBase, 'E'])
     const html = renderToStaticMarkup(

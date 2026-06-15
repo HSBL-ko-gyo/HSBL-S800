@@ -10,6 +10,8 @@ interface HandViewProps {
   canRon: boolean
   canTsumo: boolean
   showRiichiButton: boolean
+  riichiButtonEnabled: boolean
+  playerRiichi: boolean
   riichiDeclareMode: boolean
   hint: string
   onDiscard: (tile: Tile) => void
@@ -25,6 +27,8 @@ export function HandView({
   canRon,
   canTsumo,
   showRiichiButton,
+  riichiButtonEnabled,
+  playerRiichi,
   riichiDeclareMode,
   hint,
   onDiscard,
@@ -365,11 +369,16 @@ export function HandView({
           {canRon && <button className="win-button" type="button" onClick={onRon}>ロン</button>}
           {showRiichiButton && (
             <button
-              className={`riichi-button hand-riichi-button ${riichiDeclareMode ? 'is-active' : ''}`}
+              className={[
+                'riichi-button hand-riichi-button',
+                riichiDeclareMode ? 'is-active' : '',
+                playerRiichi ? 'is-established' : '',
+              ].filter(Boolean).join(' ')}
               type="button"
+              disabled={!riichiButtonEnabled}
               onClick={() => onRiichiMode(!riichiDeclareMode)}
             >
-              {riichiDeclareMode ? 'リーチ取消' : 'リーチ宣言'}
+              {playerRiichi ? 'リーチ成立' : riichiDeclareMode ? 'リーチ取消' : 'リーチ宣言'}
             </button>
           )}
         </div>

@@ -34,8 +34,10 @@ export function TableView({
 }: TableViewProps) {
   const humanTurn = game.status === 'playing' && game.currentPlayer === 0 && game.awaitingDiscard
   const freeDiscard = humanTurn && !game.playerRiichi
+  const showRiichiButton = game.status === 'playing'
   const currentPlayer = game.players[game.currentPlayer]
   const canTsumo = canDeclareTsumo(game)
+  const riichiButtonEnabled = humanTurn && !game.playerRiichi && !canTsumo
   const baselineHand = game.players[0].hand.filter((tile) => tile.id !== game.drawnTileId)
   const baselineShanten = calculateShanten(baselineHand)
   const drawnTile = game.players[0].hand.find((tile) => tile.id === game.drawnTileId)
@@ -106,7 +108,9 @@ export function TableView({
             canDiscard={freeDiscard}
             canRon={Boolean(game.pendingRonTile)}
             canTsumo={canTsumo}
-            showRiichiButton={humanTurn && !game.playerRiichi && !canTsumo}
+            showRiichiButton={showRiichiButton}
+            riichiButtonEnabled={riichiButtonEnabled}
+            playerRiichi={game.playerRiichi}
             riichiDeclareMode={game.riichiDeclareMode}
             hint={handHint}
             onDiscard={onDiscard}
@@ -125,7 +129,9 @@ export function TableView({
           evaluation={game.lastEvaluation}
           riichiWaits={riichiWaits}
           feedback={game.lastFeedback}
-          showRiichiButton={humanTurn && !game.playerRiichi}
+          showRiichiButton={showRiichiButton}
+          riichiButtonEnabled={riichiButtonEnabled}
+          playerRiichi={game.playerRiichi}
           riichiDeclareMode={game.riichiDeclareMode}
           onRiichiMode={onRiichiMode}
         />

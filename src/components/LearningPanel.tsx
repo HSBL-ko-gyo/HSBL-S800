@@ -13,6 +13,8 @@ interface LearningPanelProps {
   riichiWaits: ImprovementTile[]
   feedback: string | null
   showRiichiButton: boolean
+  riichiButtonEnabled: boolean
+  playerRiichi: boolean
   riichiDeclareMode: boolean
   onRiichiMode: (enabled: boolean) => void
 }
@@ -27,6 +29,8 @@ export function LearningPanel({
   riichiWaits,
   feedback,
   showRiichiButton,
+  riichiButtonEnabled,
+  playerRiichi,
   riichiDeclareMode,
   onRiichiMode,
 }: LearningPanelProps) {
@@ -56,11 +60,16 @@ export function LearningPanel({
       <div className="action-buttons">
         {showRiichiButton && (
           <button
-            className={`riichi-button ${riichiDeclareMode ? 'is-active' : ''}`}
+            className={[
+              'riichi-button',
+              riichiDeclareMode ? 'is-active' : '',
+              playerRiichi ? 'is-established' : '',
+            ].filter(Boolean).join(' ')}
             type="button"
+            disabled={!riichiButtonEnabled}
             onClick={() => onRiichiMode(!riichiDeclareMode)}
           >
-            {riichiDeclareMode ? 'リーチ宣言をやめる' : 'リーチ宣言'}
+            {playerRiichi ? 'リーチ成立' : riichiDeclareMode ? 'リーチ宣言をやめる' : 'リーチ宣言'}
           </button>
         )}
       </div>

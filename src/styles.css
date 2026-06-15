@@ -565,6 +565,17 @@ h1 {
 
 .riichi-button { background: linear-gradient(180deg, #f3db9c, var(--gold)); }
 
+.riichi-button:disabled {
+  cursor: default;
+  opacity: .45;
+  filter: saturate(.45);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, .2);
+}
+
+.riichi-button.is-established:disabled {
+  opacity: .7;
+}
+
 .riichi-button.is-active {
   background: linear-gradient(180deg, #f5b4a9, #d66353);
   box-shadow: 0 0 0 2px rgba(255, 229, 222, .55), 0 4px 12px rgba(0, 0, 0, .3);
