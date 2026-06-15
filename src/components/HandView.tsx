@@ -167,11 +167,13 @@ interface HandViewProps {
   riichiButtonEnabled: boolean
   playerRiichi: boolean
   riichiDeclareMode: boolean
+  callsDisabled: boolean
   hint: string
   onDiscard: (tile: Tile) => void
   onRon: () => void
   onTsumo: () => void
   onRiichiMode: (enabled: boolean) => void
+  onCallsDisabledMode: (enabled: boolean) => void
 }
 
 export function HandView({
@@ -184,11 +186,13 @@ export function HandView({
   riichiButtonEnabled,
   playerRiichi,
   riichiDeclareMode,
+  callsDisabled,
   hint,
   onDiscard,
   onRon,
   onTsumo,
   onRiichiMode,
+  onCallsDisabledMode,
 }: HandViewProps) {
   const handRef = useRef<HTMLDivElement>(null)
   const overviewRef = useRef<HTMLDivElement>(null)
@@ -450,6 +454,14 @@ export function HandView({
         '--discard-progress': discardProgress,
       } as CSSProperties}
     >
+      <label className="side-call-toggle mobile-call-toggle" aria-label="鳴き無し">
+        <input
+          type="checkbox"
+          checked={callsDisabled}
+          onChange={(event) => onCallsDisabledMode(event.currentTarget.checked)}
+        />
+        <span>鳴き無し</span>
+      </label>
       <span className="mobile-hand-guide overview-guide">全体表示・ドラッグで移動</span>
       <div
         className="mobile-hand-overview"
@@ -494,7 +506,6 @@ export function HandView({
         <span><strong>{blockTactic.countLabel}</strong><em>{blockTactic.statusLabel}</em></span>
         <small>{blockTactic.detail}</small>
       </div>
-      <span className="mobile-hand-guide rail-guide">拡大操作・ここを横スライド</span>
       <div className="mobile-hand-control">
         <span className="discard-threshold-guide" aria-hidden="true">
           <span className="discard-gradient-zone" />
@@ -527,6 +538,7 @@ export function HandView({
           </div>
         </div>
       </div>
+      <span className="mobile-hand-guide rail-guide">拡大操作・ここを横スライド</span>
       <div className={`hand desktop-hand ${canDiscard ? 'is-active' : ''}`}>
         {displayed.map((tile) => (
           <span className="hand-tile-slot" key={`desktop-${tile.id}`}>

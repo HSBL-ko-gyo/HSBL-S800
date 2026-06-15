@@ -64,7 +64,7 @@ function CallDisableSwitch({
   onChange: (enabled: boolean) => void
 }) {
   return (
-    <label className="side-call-toggle" aria-label="鳴き無し">
+    <label className="side-call-toggle desktop-call-toggle" aria-label="鳴き無し">
       <input
         type="checkbox"
         checked={enabled}
@@ -175,11 +175,13 @@ export function TableView({
             riichiButtonEnabled={riichiButtonEnabled}
             playerRiichi={game.playerRiichi}
             riichiDeclareMode={game.riichiDeclareMode}
+            callsDisabled={game.callsDisabled}
             hint={handHint}
             onDiscard={onDiscard}
             onRon={onRon}
             onTsumo={onTsumo}
             onRiichiMode={onRiichiMode}
+            onCallsDisabledMode={onCallsDisabledMode}
           />
           <MeldView melds={game.players[0].melds} />
           {game.phase === 'reaction_review' && (

@@ -881,6 +881,8 @@ h1 {
   background: rgba(232, 200, 121, .11);
 }
 
+.mobile-call-toggle { display: none; }
+
 .riichi-button,
 .win-button,
 .restart-button {
@@ -1341,25 +1343,33 @@ h1 {
     gap: 4px;
   }
   .app-footer a { font-size: 11px; }
-  .hand-zone { margin-top: 7px; }
-  .side-call-toggle {
-    left: 2px;
-    top: 76px;
-    min-width: 42px;
-    padding: 7px 4px;
+  .hand-zone {
+    position: relative;
+    margin-top: 7px;
+  }
+  .desktop-call-toggle { display: none; }
+  .mobile-call-toggle {
+    left: 12px;
+    top: 98px;
+    display: inline-flex;
+    flex-direction: row;
+    min-width: 0;
+    padding: 5px 8px;
     transform: none;
+    border-radius: 999px;
     font-size: 9px;
+    writing-mode: horizontal-tb;
   }
-  .side-call-toggle input {
-    width: 19px;
-    height: 32px;
+  .mobile-call-toggle input {
+    width: 28px;
+    height: 17px;
   }
-  .side-call-toggle input::before {
-    width: 12px;
-    height: 12px;
+  .mobile-call-toggle input::before {
+    width: 11px;
+    height: 11px;
   }
-  .side-call-toggle input:checked::before {
-    transform: translateY(12px);
+  .mobile-call-toggle input:checked::before {
+    transform: translateX(11px);
   }
   .desktop-hand { display: none; }
   .desktop-block-count-guide,
