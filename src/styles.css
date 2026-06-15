@@ -259,6 +259,8 @@ h1 {
   margin-left: clamp(5px, 1.2vw, 13px);
 }
 
+.hand-scroll-hint { display: none; }
+
 .hand-hint {
   min-height: 20px;
   margin-top: 7px;
@@ -872,17 +874,34 @@ h1 {
   .wall-counter b { font-size: 25px; }
   .hand-zone { margin-top: 12px; }
   .hand {
-    min-height: 68px;
-    gap: 0;
-    padding: 8px 2px 12px;
-    overflow: visible;
+    min-height: 84px;
+    justify-content: flex-start;
+    gap: 4px;
+    padding: 8px 12px 14px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-behavior: smooth;
+    scroll-padding-inline: 12px;
+    scrollbar-color: rgba(232, 200, 121, .45) rgba(0, 0, 0, .08);
+    scrollbar-width: thin;
+    touch-action: pan-x;
   }
   .hand .tile.hand {
-    --tile-width: 29px;
-    margin-left: -4px;
+    --tile-width: 44px;
+    scroll-snap-align: center;
   }
-  .hand .tile.hand:first-child { margin-left: 0; }
-  .hand .tile.drawn { margin-left: 2px; }
+  .hand::-webkit-scrollbar { height: 5px; }
+  .hand::-webkit-scrollbar-track { background: rgba(0, 0, 0, .08); }
+  .hand::-webkit-scrollbar-thumb { border-radius: 999px; background: rgba(232, 200, 121, .45); }
+  .hand .tile.drawn { margin-left: 8px; }
+  .hand-scroll-hint {
+    display: block;
+    margin-top: 2px;
+    color: rgba(247, 242, 228, .48);
+    font-size: 9px;
+    letter-spacing: .05em;
+  }
   .hand-action-buttons .win-button { min-width: 144px; }
   .learning-panel { gap: 8px; margin-top: 8px; padding: 9px; border-radius: 13px; }
   .learning-metrics { gap: 5px; }
