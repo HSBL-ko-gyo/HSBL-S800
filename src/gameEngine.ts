@@ -111,6 +111,8 @@ const PLAYER_DATA: Array<{ name: string; wind: Wind }> = [
   { name: '上家', wind: '北' },
 ]
 
+const DEAD_WALL_SIZE = 14
+
 const CODE_ORDER = new Map<TileCode, number>(
   TILE_CODES.map((code, index) => [code, index]),
 )
@@ -530,6 +532,8 @@ export function createInitialGame(random: () => number = Math.random): GameState
       if (tile) player.hand.push(tile)
     }
   }
+
+  wall.splice(0, DEAD_WALL_SIZE)
 
   return {
     status: 'playing',
