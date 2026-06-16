@@ -1701,16 +1701,16 @@ h1 {
 
 @media (min-width: 781px) {
   .play-column .reaction-panel {
-    position: absolute;
+    position: relative;
     z-index: 6;
-    left: 50%;
-    top: min(58vw, 500px);
+    left: auto;
+    top: auto;
     right: auto;
     bottom: auto;
     width: min(430px, calc(100% - 36px));
-    margin: 0;
+    margin: 10px auto 0;
     padding: 9px 11px;
-    transform: translateX(-50%);
+    transform: none;
   }
 
   .play-column .declare-panel {
