@@ -187,6 +187,7 @@ export function TableView({
   const reactionReviewQuestion = isRonOnlyReaction ? 'ロンする？' : '宣言する？'
   const reactionReviewActionLabel = isRonOnlyReaction ? 'ロン確認' : '宣言する'
   const reactionReviewSkipLabel = isRonOnlyReaction ? '見送る' : 'ツモる'
+  const isReactionDialogOpen = game.phase === 'reaction_review' || game.phase === 'declare_reaction'
   const statusText = game.status === 'draw'
     ? '流局'
     : game.status === 'win'
@@ -207,7 +208,11 @@ export function TableView({
       : game.riichiDeclareMode
         ? 'リーチ宣言中：切る牌を選んでください'
         : game.lastFeedback
-          ?? (freeDiscard ? '切る牌を選んでください' : game.playerRiichi ? 'リーチ後は自動ツモ切り' : '敵の打牌中…')
+          ?? (freeDiscard
+            ? '切る牌を選んでください'
+            : game.playerRiichi
+              ? 'リーチ後は自動ツモ切り'
+              : isReactionDialogOpen ? '' : '敵の打牌中…')
 
   return (
     <>

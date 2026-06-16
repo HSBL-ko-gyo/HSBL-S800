@@ -1983,7 +1983,7 @@ h1 {
     z-index: 20;
     left: 50%;
     right: auto;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(188px, 28svh, 238px));
     width: min(360px, calc(100vw - 28px));
     max-height: min(58vh, 420px);
     max-height: min(58svh, 420px);

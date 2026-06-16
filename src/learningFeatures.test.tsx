@@ -350,6 +350,7 @@ describe('reaction declaration MVP', () => {
     expect(reviewHtml).toContain('ツモ前確認')
     expect(reviewHtml).toContain('>宣言する</button>')
     expect(reviewHtml).toContain('>ツモる</button>')
+    expect(reviewHtml).not.toContain('敵の打牌中…')
     expect(reviewHtml).not.toContain('宣言できる捨て牌はありません')
 
     const declaring = startReactionDeclaration(review)
