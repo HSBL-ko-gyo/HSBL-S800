@@ -2278,3 +2278,41 @@ h1 {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+@media (min-width: 700px) and (max-width: 780px) {
+  .overview-guide,
+  .rail-guide,
+  .mobile-hand-overview {
+    display: none;
+  }
+
+  .mobile-call-toggle {
+    top: 34px;
+  }
+
+  .mobile-block-guide {
+    width: min(720px, calc(100vw - 40px));
+    margin-top: 2px;
+  }
+
+  .mobile-hand-control {
+    --rail-width: min(720px, calc(100vw - 40px));
+    --rail-tile-width: min(48px, calc((100vw - 80px) / 14));
+    --rail-gap: 3px;
+  }
+
+  .hand.mobile-hand-rail {
+    min-height: 112px;
+    padding-top: 34px;
+    overflow-x: hidden;
+  }
+
+  .mobile-hand-track {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .hand-scroll-hint {
+    display: none;
+  }
+}
