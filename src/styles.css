@@ -1064,7 +1064,7 @@ h1 {
 
 .win-celebration {
   position: fixed;
-  z-index: 9;
+  z-index: 11;
   inset: 0;
   overflow: hidden;
   pointer-events: none;
