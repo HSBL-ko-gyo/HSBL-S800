@@ -406,11 +406,13 @@ describe('reaction declaration MVP', () => {
   })
 
   it('declares pon, moves two hand tiles into a meld, and hides the called river tile', () => {
+    const previousState = gameWithHand([...tenpaiBase, 'E'])
+    const previousDiscard = discardHumanTile(previousState, previousState.players[0].hand[13].id)
     const beforeDraw = stateBeforeEnemyDiscard(
       ['5m', '5m', '1p', '2p', '3p', '4p', '6p', '8p', '1s', '3s', '5s', 'E', 'S'],
       '5m',
     )
-    const review = discardTile(beforeDraw, beforeDraw.players[3].hand[0].id)
+    const review = discardTile({ ...beforeDraw, lastEvaluation: previousDiscard.lastEvaluation }, beforeDraw.players[3].hand[0].id)
     const declaring = startReactionDeclaration(review)
     const called = declareReaction(declaring, 'pon', declaring.pendingReactionEvents[0].id)
 
@@ -420,6 +422,7 @@ describe('reaction declaration MVP', () => {
     expect(called.players[0].melds[0].type).toBe('pon')
     expect(called.players[3].river[0].calledBy).toBe(0)
     expect(called.players[3].river[0].callType).toBe('pon')
+    expect(called.lastEvaluation).toBeNull()
     expect(getVisibleTiles(called).filter((tile) => tile.code === '5m')).toHaveLength(3)
 
     const html = renderTable(called)
@@ -429,11 +432,13 @@ describe('reaction declaration MVP', () => {
   })
 
   it('declares chi only from kamicha and keeps riichi unavailable after calling', () => {
+    const previousState = gameWithHand([...tenpaiBase, 'E'])
+    const previousDiscard = discardHumanTile(previousState, previousState.players[0].hand[13].id)
     const beforeDraw = stateBeforeEnemyDiscard(
       ['3m', '4m', '1p', '2p', '4p', '6p', '8p', '1s', '3s', '5s', 'E', 'S', 'W'],
       '2m',
     )
-    const review = discardTile(beforeDraw, beforeDraw.players[3].hand[0].id)
+    const review = discardTile({ ...beforeDraw, lastEvaluation: previousDiscard.lastEvaluation }, beforeDraw.players[3].hand[0].id)
     const declaring = startReactionDeclaration(review)
     const event = declaring.pendingReactionEvents[0]
     const called = declareReaction(declaring, 'chi', event.id, declaring.players[0].hand
@@ -444,6 +449,7 @@ describe('reaction declaration MVP', () => {
     expect(called.players[0].hand).toHaveLength(11)
     expect(called.players[0].melds[0].type).toBe('chi')
     expect(called.players[3].river[0].callType).toBe('chi')
+    expect(called.lastEvaluation).toBeNull()
     expect(setRiichiDeclareMode(called, true).riichiDeclareMode).toBe(false)
 
     const notKamicha = stateBeforeEnemyDiscard(

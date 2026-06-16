@@ -1447,6 +1447,7 @@ export function declareReaction(
       pendingRonTile: null,
       pendingReactionEvents: [],
       riichiDeclareMode: false,
+      lastEvaluation: null,
       lastFeedback: 'ポン成立！',
       callLogs: [...state.callLogs, {
         turnIndex: event.turnIndex,
@@ -1489,6 +1490,7 @@ export function declareReaction(
     pendingRonTile: null,
     pendingReactionEvents: [],
     riichiDeclareMode: false,
+    lastEvaluation: null,
     lastFeedback: 'チー成立！',
     callLogs: [...state.callLogs, {
       turnIndex: event.turnIndex,
