@@ -301,6 +301,10 @@ describe('riichi learning flow', () => {
     expect(html).toContain('18,000点')
     expect(html).toContain('6飜')
     expect(html).toContain('20符')
+    expect(html).toContain('score-yaku-reading')
+    expect(html).toContain('(リーチ)')
+    expect(html).toContain('(メンゼンツモ)')
+    expect(html).toContain('(タンヤオ)')
   })
 
   it('shows waits after riichi without showing a duplicated missed-riichi message', () => {

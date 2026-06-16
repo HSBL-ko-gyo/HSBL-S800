@@ -1158,6 +1158,9 @@ h1 {
   max-height: min(86vh, 760px);
   padding: 24px;
   overflow-y: auto;
+  scrollbar-color: rgba(232, 200, 121, .62) rgba(6, 32, 24, .28);
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
   transform: translate(-50%, -50%);
   border: 1px solid rgba(232, 200, 121, .65);
   border-radius: 18px;
@@ -1165,6 +1168,28 @@ h1 {
   box-shadow: 0 20px 70px rgba(0, 0, 0, .75);
   text-align: center;
   animation: result-in .2s ease-out;
+}
+
+.round-result::-webkit-scrollbar {
+  width: 13px;
+}
+
+.round-result::-webkit-scrollbar-track {
+  margin: 14px 4px;
+  border-radius: 999px;
+  background: rgba(6, 32, 24, .28);
+}
+
+.round-result::-webkit-scrollbar-thumb {
+  border: 3px solid rgba(16, 75, 54, .92);
+  border-radius: 999px;
+  background: rgba(232, 200, 121, .68);
+  background-clip: padding-box;
+}
+
+.round-result::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 224, 129, .88);
+  background-clip: padding-box;
 }
 
 .round-result.is-win-result {
@@ -1332,7 +1357,8 @@ h1 {
 }
 
 .score-breakdown span,
-.score-yaku-list span {
+.score-yaku-empty,
+.score-yaku-item {
   padding: 5px 9px;
   border: 1px solid rgba(247, 242, 228, .12);
   border-radius: 7px;
@@ -1341,9 +1367,39 @@ h1 {
   font-size: 11px;
 }
 
+.score-yaku-item {
+  display: grid;
+  min-width: 92px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1px 7px;
+}
+
+.score-yaku-name {
+  min-width: 0;
+  color: rgba(247, 242, 228, .88);
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.score-yaku-reading {
+  min-width: 0;
+  color: rgba(232, 200, 121, .72);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
 .score-breakdown b,
-.score-yaku-list b {
+.score-yaku-item b {
   color: var(--ivory);
+}
+
+.score-yaku-item b {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  white-space: nowrap;
 }
 
 .score-note {
@@ -1732,9 +1788,24 @@ h1 {
     margin-top: 14px;
   }
 
+  .hand-action-buttons {
+    gap: 9px;
+    margin-top: 8px;
+  }
+
+  .hand-action-buttons .hand-riichi-button {
+    display: inline-flex;
+    min-width: 156px;
+    justify-content: center;
+  }
+
   .learning-panel {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 12px;
+  }
+
+  .learning-panel > .action-buttons {
+    display: none;
   }
 
   .learning-panel > .evaluation-card {

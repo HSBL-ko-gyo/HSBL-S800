@@ -54,6 +54,36 @@ const AFFILIATE_BOOKS = [
   },
 ]
 
+const SCORE_YAKU_READINGS: Record<string, string> = {
+  立直: 'リーチ',
+  門前清自摸和: 'メンゼンツモ',
+  断么九: 'タンヤオ',
+  平和: 'ピンフ',
+  七対子: 'チートイツ',
+  ダブ東: 'ダブトン',
+  東風: 'トン',
+  南風: 'ナン',
+  西風: 'シャー',
+  北風: 'ペー',
+  混一色: 'ホンイツ',
+  清一色: 'チンイツ',
+  一気通貫: 'イッツー',
+  三色同順: 'サンショク',
+  対々和: 'トイトイ',
+}
+
+const VALUE_TILE_READINGS: Record<string, string> = {
+  白: 'ハク',
+  發: 'ハツ',
+  中: 'チュン',
+}
+
+function getScoreYakuReading(name: string): string {
+  const valueTile = name.match(/^役牌\s+(.+)$/)?.[1]
+  if (valueTile) return `ヤクハイ ${VALUE_TILE_READINGS[valueTile] ?? valueTile}`
+  return SCORE_YAKU_READINGS[name] ?? ''
+}
+
 function calledTileDirection(from: Meld['from']) {
   if (from === 3) return 'from-left'
   if (from === 2) return 'from-across'
@@ -383,10 +413,17 @@ export function TableView({
               </div>
               <span className="score-section-label">得点のもと</span>
               <div className="score-yaku-list">
-                {game.roundScore.yaku.length === 0 && <span>役なし候補</span>}
-                {game.roundScore.yaku.map((yaku) => (
-                  <span key={yaku.name}>{yaku.name} <b>{yaku.han}飜</b></span>
-                ))}
+                {game.roundScore.yaku.length === 0 && <span className="score-yaku-empty">役なし候補</span>}
+                {game.roundScore.yaku.map((yaku) => {
+                  const reading = getScoreYakuReading(yaku.name)
+                  return (
+                    <div className="score-yaku-item" key={yaku.name}>
+                      <span className="score-yaku-name">{yaku.name}</span>
+                      {reading && <small className="score-yaku-reading">({reading})</small>}
+                      <b>{yaku.han}飜</b>
+                    </div>
+                  )
+                })}
               </div>
               <p className="score-note">{game.roundScore.note}</p>
             </section>
