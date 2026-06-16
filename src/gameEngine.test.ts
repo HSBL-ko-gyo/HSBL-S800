@@ -50,6 +50,15 @@ describe('game engine', () => {
     expect(score.totalPoints).toBe(7800)
     expect(score.paymentText).toBe('親ツモ 2600点オール')
     expect(score.yaku.map((yaku) => yaku.name)).toEqual(['立直', '門前清自摸和', '断么九', '平和'])
+    expect(score.yaku.find((yaku) => yaku.name === '立直')?.tileNote).toBe('宣言でついた役')
+    expect(score.yaku.find((yaku) => yaku.name === '断么九')?.tileGroups?.[0]).toMatchObject({
+      label: '2〜8のみ',
+      tiles: expect.arrayContaining(['2m', '8m', '3p', '6s', '2s']),
+    })
+    const pinfuGroups = score.yaku.find((yaku) => yaku.name === '平和')?.tileGroups
+    expect(pinfuGroups).toHaveLength(5)
+    expect(pinfuGroups?.slice(0, 4).every((group) => group.label === '順子' && group.tiles.length === 3)).toBe(true)
+    expect(pinfuGroups?.at(-1)).toMatchObject({ label: '雀頭', tiles: ['2s', '2s'] })
   })
 
   it('labels limit hands such as mangan', () => {

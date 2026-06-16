@@ -3,6 +3,7 @@ import {
   buildHandPlanAdvice,
   calculateShanten,
   canDeclareTsumo,
+  createTile,
   getChiOptions,
   getVisibleTiles,
   getRiichiWaitTiles,
@@ -414,13 +415,33 @@ export function TableView({
               <span className="score-section-label">得点のもと</span>
               <div className="score-yaku-list">
                 {game.roundScore.yaku.length === 0 && <span className="score-yaku-empty">役なし候補</span>}
-                {game.roundScore.yaku.map((yaku) => {
+                {game.roundScore.yaku.map((yaku, yakuIndex) => {
                   const reading = getScoreYakuReading(yaku.name)
                   return (
-                    <div className="score-yaku-item" key={yaku.name}>
+                    <div className="score-yaku-item" key={`${yaku.name}-${yakuIndex}`}>
                       <span className="score-yaku-name">{yaku.name}</span>
                       {reading && <small className="score-yaku-reading">({reading})</small>}
                       <b>{yaku.han}飜</b>
+                      {yaku.tileGroups && yaku.tileGroups.length > 0 ? (
+                        <div className="score-yaku-tiles" aria-label={`${yaku.name}の対象牌`}>
+                          {yaku.tileGroups.map((group, groupIndex) => (
+                            <div className="score-yaku-tile-row" key={`${yaku.name}-${group.label}-${groupIndex}`}>
+                              <span>{group.label}</span>
+                              <div>
+                                {group.tiles.map((code, tileIndex) => (
+                                  <TileView
+                                    key={`${yaku.name}-${groupIndex}-${tileIndex}-${code}`}
+                                    tile={createTile(code, `score-yaku-${yakuIndex}-${groupIndex}-${tileIndex}`)}
+                                    usage="tiny"
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : yaku.tileNote ? (
+                        <small className="score-yaku-note">{yaku.tileNote}</small>
+                      ) : null}
                     </div>
                   )
                 })}

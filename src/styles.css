@@ -1412,7 +1412,7 @@ h1 {
 
 .score-yaku-item {
   display: grid;
-  min-width: 92px;
+  min-width: 132px;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 1px 7px;
@@ -1443,6 +1443,47 @@ h1 {
   grid-row: 1 / span 2;
   align-self: center;
   white-space: nowrap;
+}
+
+.score-yaku-tiles,
+.score-yaku-note {
+  grid-column: 1 / -1;
+}
+
+.score-yaku-tiles {
+  display: grid;
+  gap: 4px;
+  margin-top: 5px;
+}
+
+.score-yaku-tile-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.score-yaku-tile-row > span,
+.score-yaku-note {
+  color: rgba(247, 242, 228, .52);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.score-yaku-tile-row > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  min-width: 0;
+}
+
+.score-yaku-tile-row .tile.tiny {
+  --tile-width: 21px;
+}
+
+.score-yaku-note {
+  margin-top: 4px;
 }
 
 .score-note {

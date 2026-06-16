@@ -125,6 +125,13 @@ export interface DiscardLog {
 export interface ScoreYaku {
   name: string
   han: number
+  tileGroups?: ScoreYakuTileGroup[]
+  tileNote?: string
+}
+
+export interface ScoreYakuTileGroup {
+  label: string
+  tiles: TileCode[]
 }
 
 export interface RoundScore {
@@ -267,6 +274,95 @@ function hasStraight(counts: number[], offset: number): boolean {
   return [1, 4, 7].every((start) =>
     [start, start + 1, start + 2].every((number) => counts[offset + number - 1] > 0),
   )
+}
+
+function codeGroup(code: TileCode, count: number): TileCode[] {
+  return Array.from({ length: count }, () => code)
+}
+
+function sortedTileCodes(codes: TileCode[]): TileCode[] {
+  return [...codes].sort((a, b) => (CODE_ORDER.get(a) ?? 0) - (CODE_ORDER.get(b) ?? 0))
+}
+
+function allTileGroup(codes: TileCode[], label: string): ScoreYakuTileGroup[] {
+  return [{ label, tiles: sortedTileCodes(codes) }]
+}
+
+function tripletTileGroup(code: TileCode, label = '刻子'): ScoreYakuTileGroup[] {
+  return [{ label, tiles: codeGroup(code, 3) }]
+}
+
+function sevenPairsTileGroups(counts: number[]): ScoreYakuTileGroup[] {
+  return counts.flatMap((count, index) =>
+    count >= 2 ? [{ label: '対子', tiles: codeGroup(TILE_CODES[index], 2) }] : [],
+  )
+}
+
+function findSequenceOnlyGroups(counts: number[]): TileCode[][] | null {
+  const working = [...counts]
+  const groups: TileCode[][] = []
+
+  const search = (): boolean => {
+    const index = working.findIndex((count) => count > 0)
+    if (index === -1) return true
+    if (index >= 27 || index % 9 > 6) return false
+    if (working[index + 1] <= 0 || working[index + 2] <= 0) return false
+
+    working[index] -= 1
+    working[index + 1] -= 1
+    working[index + 2] -= 1
+    groups.push([TILE_CODES[index], TILE_CODES[index + 1], TILE_CODES[index + 2]])
+
+    if (search()) return true
+
+    groups.pop()
+    working[index] += 1
+    working[index + 1] += 1
+    working[index + 2] += 1
+    return false
+  }
+
+  return search() ? groups : null
+}
+
+function pinfuTileGroups(counts: number[]): ScoreYakuTileGroup[] | undefined {
+  for (const [pairIndex, count] of counts.entries()) {
+    if (count < 2) continue
+    const withoutPair = [...counts]
+    withoutPair[pairIndex] -= 2
+    const sequences = findSequenceOnlyGroups(withoutPair)
+    if (!sequences || sequences.length !== 4) continue
+    return [
+      ...sequences.map((tiles) => ({ label: '順子', tiles })),
+      { label: '雀頭', tiles: codeGroup(TILE_CODES[pairIndex], 2) },
+    ]
+  }
+  return undefined
+}
+
+function straightTileGroups(counts: number[]): ScoreYakuTileGroup[] | undefined {
+  for (const offset of [0, 9, 18]) {
+    if (!hasStraight(counts, offset)) continue
+    return [1, 4, 7].map((start) => ({
+      label: '順子',
+      tiles: [start, start + 1, start + 2].map((number) => TILE_CODES[offset + number - 1]),
+    }))
+  }
+  return undefined
+}
+
+function sanshokuTileGroups(counts: number[]): ScoreYakuTileGroup[] | undefined {
+  for (let start = 1; start <= 7; start += 1) {
+    const hasPattern = [0, 9, 18].every((offset) =>
+      [start, start + 1, start + 2].every((number) => counts[offset + number - 1] > 0),
+    )
+    if (!hasPattern) continue
+    return [0, 9, 18].map((offset) => ({
+      label: '順子',
+      tiles: [start, start + 1, start + 2].map((number) => TILE_CODES[offset + number - 1]),
+    }))
+  }
+  return undefined
 }
 
 function getValuePairFu(
@@ -1026,6 +1122,12 @@ export function calculateWinningScore(
   const codes = tileCodes(hand)
   const counts = toCounts(codes)
   const yaku: ScoreYaku[] = []
+  const addYaku = (
+    name: string,
+    han: number,
+    tileGroups?: ScoreYakuTileGroup[],
+    tileNote?: string,
+  ) => yaku.push({ name, han, tileGroups, tileNote })
   const playerWind = options.playerWind ?? '東'
   const roundWind = options.roundWind ?? ROUND_WIND
   const playerWindTile = windCode(playerWind)
@@ -1040,33 +1142,33 @@ export function calculateWinningScore(
     && valuePairFu === 0
     && countSequenceCandidates(counts) >= 4
 
-  if (options.riichi) yaku.push({ name: '立直', han: 1 })
-  if (winType === 'tsumo') yaku.push({ name: '門前清自摸和', han: 1 })
-  if (codes.every((code) => !isTerminalOrHonor(code))) yaku.push({ name: '断么九', han: 1 })
-  if (pinfuLike) yaku.push({ name: '平和', han: 1 })
-  if (sevenPairs) yaku.push({ name: '七対子', han: 2 })
+  if (options.riichi) addYaku('立直', 1, undefined, '宣言でついた役')
+  if (winType === 'tsumo') addYaku('門前清自摸和', 1, undefined, '門前で自分が引いた和了')
+  if (codes.every((code) => !isTerminalOrHonor(code))) addYaku('断么九', 1, allTileGroup(codes, '2〜8のみ'))
+  if (pinfuLike) addYaku('平和', 1, pinfuTileGroups(counts) ?? allTileGroup(codes, '順子形'))
+  if (sevenPairs) addYaku('七対子', 2, sevenPairsTileGroups(counts))
 
   for (const code of ['E', 'S', 'W', 'N'] as const) {
     const count = counts[CODE_ORDER.get(code) ?? 0]
     if (count < 3) continue
     const windHan = (code === playerWindTile ? 1 : 0) + (code === roundWindTile ? 1 : 0)
-    if (windHan === 2) yaku.push({ name: 'ダブ東', han: 2 })
-    else if (windHan === 1) yaku.push({ name: `${tileName(code)}風`, han: 1 })
+    if (windHan === 2) addYaku('ダブ東', 2, tripletTileGroup(code, '役牌'))
+    else if (windHan === 1) addYaku(`${tileName(code)}風`, 1, tripletTileGroup(code, '役牌'))
   }
 
   for (const code of ['P', 'F', 'C'] as const) {
-    if (counts[CODE_ORDER.get(code) ?? 0] >= 3) yaku.push({ name: `役牌 ${tileName(code)}`, han: 1 })
+    if (counts[CODE_ORDER.get(code) ?? 0] >= 3) addYaku(`役牌 ${tileName(code)}`, 1, tripletTileGroup(code, '役牌'))
   }
 
   const suitedSuits = [0, 1, 2].filter((suit) =>
     counts.slice(suit * 9, suit * 9 + 9).some((count) => count > 0),
   )
   const honorCount = counts.slice(27).reduce((sum, count) => sum + count, 0)
-  if (suitedSuits.length === 1 && honorCount > 0) yaku.push({ name: '混一色', han: 3 })
-  if (suitedSuits.length === 1 && honorCount === 0) yaku.push({ name: '清一色', han: 6 })
+  if (suitedSuits.length === 1 && honorCount > 0) addYaku('混一色', 3, allTileGroup(codes, '1色+字牌'))
+  if (suitedSuits.length === 1 && honorCount === 0) addYaku('清一色', 6, allTileGroup(codes, '1色のみ'))
 
   if ([0, 9, 18].some((offset) => hasStraight(counts, offset))) {
-    yaku.push({ name: '一気通貫', han: 2 })
+    addYaku('一気通貫', 2, straightTileGroups(counts))
   }
 
   const hasSanshoku = Array.from({ length: 7 }, (_, index) => index + 1).some((start) =>
@@ -1074,9 +1176,11 @@ export function calculateWinningScore(
       [start, start + 1, start + 2].every((number) => counts[offset + number - 1] > 0),
     ),
   )
-  if (hasSanshoku) yaku.push({ name: '三色同順', han: 2 })
+  if (hasSanshoku) addYaku('三色同順', 2, sanshokuTileGroups(counts))
 
-  if (!sevenPairs && tripletIndexes.length >= 4) yaku.push({ name: '対々和', han: 2 })
+  if (!sevenPairs && tripletIndexes.length >= 4) {
+    addYaku('対々和', 2, tripletIndexes.map((index) => ({ label: '刻子', tiles: codeGroup(TILE_CODES[index], 3) })))
+  }
 
   let fu: number
   if (sevenPairs) {
