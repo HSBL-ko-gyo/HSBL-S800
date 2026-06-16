@@ -210,6 +210,19 @@ describe('riichi learning flow', () => {
     expect(html).toContain('リーチ宣言')
   })
 
+  it('allows entering riichi declaration mode even before a valid discard is chosen', () => {
+    const state = gameWithHand(['1m', '2m', '3m', '7m', '8m', '9m', '3p', '4p', '3s', '7s', '8s', '9s', '9s', 'E'])
+    const updated = setRiichiDeclareMode(state, true)
+    const html = renderTable(state)
+    const failed = discardHumanTile(updated, updated.players[0].hand[0].id)
+
+    expect(updated.riichiDeclareMode).toBe(true)
+    expect(html).toContain('>リーチ宣言</button>')
+    expect(html).not.toContain('disabled="">リーチ宣言</button>')
+    expect(failed.players[0].river).toHaveLength(0)
+    expect(failed.lastFeedback).toBe('その牌ではリーチできません')
+  })
+
   it('keeps disabled riichi button slots during opponent turns', () => {
     const state: GameState = {
       ...gameWithHand([...tenpaiBase, 'E']),
@@ -500,11 +513,30 @@ describe('discard evaluations', () => {
     expect(openOption?.evaluationScore).toBeGreaterThan(deadOption?.evaluationScore ?? 0)
   })
 
+  it('prefers loose tiles over breaking complete melds or useful side shapes', () => {
+    const hand = codesToTiles(['1m', '2m', '3m', '7m', '8m', '9m', '3p', '4p', '3s', '7s', '8s', '9s', '9s', 'E'])
+    const visible = codesToTiles(['5s', '4m', '7p', '4p', '5s', '1p', '8s', '6m', 'S', '9p', 'N', 'P', 'N', 'E', '5p', 'W', 'P', 'N', 'E', '4p', '7p', '4p'])
+    const analysis = analyzeDiscardOptions(hand, visible)
+
+    expect(analysis.find((option) => option.discard.code === 'E')?.rank).toBe(1)
+    expect(buildDiscardEvaluation(hand[13], analysis, hand).whatToDiscardLabel).toBe('おすすめ一致')
+    const brokenSideShape = buildDiscardEvaluation(hand[6], analysis, hand)
+    expect(brokenSideShape.whatToDiscardLabel).toBe('別候補')
+    expect(brokenSideShape.beginnerAdvice).toContain('余り牌')
+    expect(buildDiscardEvaluation(hand[7], analysis, hand).whatToDiscardLabel).toBe('別候補')
+    expect(buildDiscardEvaluation(hand[0], analysis, hand).whatToDiscardLabel).toBe('別候補')
+    expect(buildDiscardEvaluation(hand[5], analysis, hand).whatToDiscardLabel).toBe('別候補')
+  })
+
   it('updates with grade, rank, shanten change, and acceptance gap after a discard', () => {
     const hand = codesToTiles([...tenpaiBase, 'E'])
     const analysis = analyzeDiscardOptions(hand)
     const evaluation = buildDiscardEvaluation(hand[13], analysis, hand)
-    expect(evaluation.gradeLabel).toMatch(/[◎○△×]/)
+    expect(evaluation.gradeLabel).not.toContain('悪手')
+    expect(evaluation.whatToDiscardLabel).toMatch(/おすすめ|候補圏内|別候補/)
+    expect(evaluation.whatToDiscardDetail).toContain('何切るなら')
+    expect(evaluation.tableInsight).toContain('捨て牌込み')
+    expect(evaluation.beginnerAdvice.length).toBeGreaterThan(10)
     expect(evaluation.rank).toBeGreaterThan(0)
     expect(evaluation.optionCount).toBeGreaterThan(0)
     expect(evaluation.improvementTileDifference).not.toBeNull()
@@ -513,11 +545,12 @@ describe('discard evaluations', () => {
     const state = gameWithHand([...tenpaiBase, 'E'])
     const updated = discardHumanTile(state, state.players[0].hand[13].id)
     const html = renderTable(updated)
-    expect(html).toContain('打牌評価')
-    expect(html).toContain('候補内')
-    expect(html).toContain('最善候補:')
-    expect(html).toContain('受け入れ差')
-    expect(html.indexOf('打牌評価')).toBeLessThan(html.indexOf('打牌前の注意点'))
+    expect(html).toContain('何切る')
+    expect(html).toContain('おすすめ')
+    expect(html).toContain('今の選択')
+    expect(html).toContain('打牌メモ')
+    expect(html).toContain('初心者')
+    expect(html.indexOf('何切る')).toBeLessThan(html.indexOf('打牌前の注意点'))
   })
 
   it('only mentions riichi for a riichi-capable discard', () => {
@@ -540,6 +573,15 @@ describe('discard evaluations', () => {
     const regressed = buildDiscardEvaluation(selectedBase.discard, [best, { ...selectedBase, shanten: 3, improvementTileCount: 20 }], hand)
     expect(regressed.grade).toBe('bad')
     expect(regressed.detail).toContain('補いにくい')
+  })
+
+  it('marks a same-shanten discard as bad when it loses too much live acceptance', () => {
+    const hand = codesToTiles([...tenpaiBase, 'E'])
+    const base = analyzeDiscardOptions(hand)
+    const best = { ...base[0], shanten: 2, improvementTileCount: 70, improvementTypeCount: 14, evaluationScore: 760, goodShapeCount: 4, liveShapeScore: 24, structureScore: 14, yakuHints: [], rank: 1, optionCount: 2 }
+    const thin = { ...base[1], shanten: 2, improvementTileCount: 16, improvementTypeCount: 5, evaluationScore: 200, goodShapeCount: 4, liveShapeScore: 4, structureScore: 14, yakuHints: [], rank: 2, optionCount: 2 }
+
+    expect(buildDiscardEvaluation(thin.discard, [best, thin], hand).grade).toBe('bad')
   })
 
   it('does not automatically mark a one-shanten regression as bad when live acceptance is much wider', () => {
@@ -619,10 +661,10 @@ describe('yaku memo cards', () => {
     const updated = discardHumanTile(state, state.players[0].hand[13].id)
     const html = renderTable(updated)
     expect(html).toContain('役メモ')
-    expect(html).toContain('断么九')
-    expect(html).toContain('(タンヤオ)')
-    expect(html).toContain('tile tiny')
-    expect(html.indexOf('打牌評価')).toBeLessThan(html.indexOf('役メモ'))
+    expect(html).toMatch(/\((タンヤオ|サンショク|ピンフ|イッツー|ヤクハイ|チートイツ|ホンイツ)\)/)
+    expect(html).toMatch(/class="[^"]*tile[^"]*tiny/)
+    expect(html).not.toContain('NG')
+    expect(html.indexOf('何切る')).toBeLessThan(html.indexOf('役メモ'))
   })
 
   it('maps getYakuHints results to cards and never includes riichi', () => {
@@ -631,7 +673,18 @@ describe('yaku memo cards', () => {
     const html = renderToStaticMarkup(<YakuInfoPanel hints={hints} hand={hand} />)
     expect(html).toContain('役牌')
     expect(html).toContain('(ヤクハイ)')
+    expect(html).not.toContain('NG')
     expect(html).not.toContain('リーチ')
+  })
+
+  it('keeps a yori-style yaku memo visible for learning', () => {
+    const hand = codesToTiles(['2m', '3m', '4m', '3p', '4p', '5p', '4s', '5s', '6s', '6m', '6m', '7p', '8p'])
+    const html = renderToStaticMarkup(
+      <YakuInfoPanel hints={['三色同順候補', '平和寄り', '断么九']} hand={hand} />,
+    )
+
+    expect(html).toContain('(サンショク)')
+    expect(html).toContain('(ピンフ)')
   })
 })
 

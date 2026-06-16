@@ -67,6 +67,7 @@ export interface DiscardOptionAnalysis {
   canRiichi: boolean
   goodShapeCount: number
   liveShapeScore: number
+  discardShapeCost: number
   structureScore: number
   isolatedDiscard: boolean
   evaluationScore: number
@@ -76,11 +77,17 @@ export interface DiscardOptionAnalysis {
 }
 
 export type DiscardGrade = 'best' | 'good' | 'compromise' | 'bad'
+export type WhatToDiscardGrade = 'recommended' | 'playable' | 'offPlan'
 
 export interface DiscardEvaluation {
   discard: Tile
   grade: DiscardGrade
   gradeLabel: string
+  whatToDiscardGrade: WhatToDiscardGrade
+  whatToDiscardLabel: string
+  whatToDiscardDetail: string
+  tableInsight: string
+  beginnerAdvice: string
   shanten: number
   bestShanten: number
   shantenDifference: number
@@ -555,8 +562,75 @@ function isIsolatedDiscard(discard: Tile, hand: Tile[]): boolean {
   )
 }
 
+function hasSequenceAround(counts: number[], index: number): boolean {
+  if (index >= 27) return false
+  const offset = Math.floor(index / 9) * 9
+  const number = index - offset + 1
+  return (
+    (number >= 3 && counts[index - 2] > 0 && counts[index - 1] > 0)
+    || (number >= 2 && number <= 8 && counts[index - 1] > 0 && counts[index + 1] > 0)
+    || (number <= 7 && counts[index + 1] > 0 && counts[index + 2] > 0)
+  )
+}
+
+function hasTaatsuAround(counts: number[], index: number): boolean {
+  if (index >= 27) return false
+  const offset = Math.floor(index / 9) * 9
+  const number = index - offset + 1
+  return (
+    (number >= 2 && counts[index - 1] > 0)
+    || (number <= 8 && counts[index + 1] > 0)
+    || (number >= 3 && counts[index - 2] > 0)
+    || (number <= 7 && counts[index + 2] > 0)
+  )
+}
+
+function calculateDiscardShapeCost(discard: Tile, hand: Tile[]): number {
+  const counts = toCounts(hand)
+  const index = CODE_ORDER.get(discard.code) ?? 0
+  const copies = counts[index]
+  const pairCost = copies >= 2 ? 42 : 0
+  const tripletCost = copies >= 3 ? 110 : 0
+  const sequenceCost = hasSequenceAround(counts, index) ? 120 : 0
+  const taatsuCost = hasTaatsuAround(counts, index) ? 72 : 0
+  const honorCost = discard.code.length === 1 && copies === 1 ? 0 : 24
+  return Math.max(pairCost, tripletCost, sequenceCost, taatsuCost, honorCost)
+}
+
+function looseTilePriority(discard: Tile): number {
+  if (discard.code.length === 1) return 420
+  const number = Number(discard.code[0])
+  if (number === 1 || number === 9) return 360
+  if (number === 2 || number === 8) return 260
+  return 80
+}
+
+function basicYakuScore(option: DiscardOptionAnalysis): number {
+  let score = 0
+  if (option.yakuHints.includes('断么九')) score += 20
+  if (option.yakuHints.includes('役牌候補')) score += 16
+  return score
+}
+
 function optionStrengthScore(option: DiscardOptionAnalysis): number {
-  return option.evaluationScore - option.shanten * 60 + (option.canRiichi ? 18 : 0)
+  return (
+    (option.canRiichi ? 5000 : 0)
+    - option.shanten * 260
+    - option.discardShapeCost * 4
+    + (option.isolatedDiscard ? looseTilePriority(option.discard) : 0)
+    + option.improvementTypeCount * 6
+    + option.improvementTileCount
+    + option.goodShapeCount * 12
+    + basicYakuScore(option)
+  )
+}
+
+function optionForgivingScore(option: DiscardOptionAnalysis): number {
+  return option.evaluationScore - option.shanten * 44 + (option.canRiichi ? 14 : 0)
+}
+
+function uniqueTileNames(tiles: Tile[]): string {
+  return [...new Set(tiles.map((tile) => tileName(tile.code)))].join(' / ')
 }
 
 export function analyzeDiscardOptions(
@@ -575,6 +649,7 @@ export function analyzeDiscardOptions(
     const yakuHints = getYakuHints(postHand)
     const goodShapeCount = countGoodShapes(postHand)
     const liveShapeScore = calculateLiveShapeScore(postHand, [...visibleTiles, discard])
+    const discardShapeCost = calculateDiscardShapeCost(discard, hand14)
     const structureScore = calculateStructureScore(postHand)
     const isolatedDiscard = isIsolatedDiscard(discard, hand14)
     return {
@@ -587,6 +662,7 @@ export function analyzeDiscardOptions(
       canRiichi: meldCount === 0 && isTenpai(postHand),
       goodShapeCount,
       liveShapeScore,
+      discardShapeCost,
       structureScore,
       isolatedDiscard,
       evaluationScore:
@@ -596,7 +672,7 @@ export function analyzeDiscardOptions(
         + liveShapeScore * 3
         + structureScore * 2
         + yakuHints.length * 3
-        + (isolatedDiscard ? 4 : 0),
+        + (isolatedDiscard ? 80 : 0),
       rank: 0,
       optionCount: byCode.size,
       postHand,
@@ -754,6 +830,41 @@ function evaluationReason(
   return '手牌のつながりを保ちながら進める選択です。'
 }
 
+function beginnerDiscardAdvice(
+  selected: DiscardOptionAnalysis,
+  bestOptions: DiscardOptionAnalysis[],
+  shantenDifference: number,
+  improvementTileDifference: number,
+  shapeLoss: number,
+  yakuLoss: number,
+): string {
+  const selectedName = tileName(selected.discard.code)
+  const bestNames = uniqueTileNames(bestOptions.map((option) => option.discard))
+
+  if (selected.canRiichi) {
+    return 'テンパイに取れる打牌です。リーチするか迷う場面では、まず「待ちが何枚残っているか」と「良形か」を見ると判断しやすくなります。'
+  }
+  if (shantenDifference > 0) {
+    return `今回は${selectedName}を切ると少し遠回りです。初心者を抜けるコツは、シャンテンを戻す前に「代わりに孤立牌や字牌などの余り牌を切れないか」を一度見ることです。`
+  }
+  if (selected.discardShapeCost >= 100 || shapeLoss >= 2) {
+    return `完成メンツや両面ターツは、思ったより価値があります。迷ったら${bestNames}のような余り牌から切って、できている形を残す意識で十分です。`
+  }
+  if (selected.discardShapeCost >= 72) {
+    return `${selectedName}周辺はまだ伸びる形です。序盤から中盤は、くっつきそうな数牌より、役に絡みにくい孤立牌を先に整理すると手が迷子になりにくいです。`
+  }
+  if (improvementTileDifference >= 12) {
+    return `おすすめとの差は受け入れ枚数に出ています。こういう時は「次にうれしい牌が何種類あるか」を見るだけで、何切るの精度がかなり上がります。`
+  }
+  if (yakuLoss > 0) {
+    return '形は悪くありません。ここから一歩上げるなら、速度だけでなく「残した牌でどの役を見ているか」を軽く決めておくと選択がブレにくいです。'
+  }
+  if (selected.isolatedDiscard) {
+    return '孤立牌を整理して、手牌のまとまりを残せています。初心者脱出の第一歩は、強いブロックを壊さず余り牌から切ることです。'
+  }
+  return '大きく外れた一打ではありません。次は「完成メンツ・両面・対子」を残せているかを見てから切ると、手が自然にまとまります。'
+}
+
 export function shantenLabel(shanten: number): string {
   if (shanten < 0) return '和了'
   if (shanten === 0) return 'テンパイ'
@@ -777,6 +888,7 @@ export function buildDiscardEvaluation(
   }
   const bestShanten = Math.min(...analysis.map((option) => option.shanten))
   const bestStrengthScore = Math.max(...analysis.map(optionStrengthScore))
+  const bestForgivingScore = Math.max(...analysis.map(optionForgivingScore))
   const bestOptions = analysis.filter((option) => optionStrengthScore(option) === bestStrengthScore)
   const bestImprovementTileCount = Math.max(...bestOptions.map((option) => option.improvementTileCount))
   const bestGoodShapeCount = Math.max(...bestOptions.map((option) => option.goodShapeCount))
@@ -788,9 +900,12 @@ export function buildDiscardEvaluation(
   const structureLoss = Math.max(0, bestStructureScore - selected.structureScore)
   const yakuLoss = Math.max(0, bestYakuCount - selected.yakuHints.length)
   const importantShapeBroken = shapeLoss >= 2 || structureLoss >= 4
-  const strengthGap = Math.max(0, bestStrengthScore - optionStrengthScore(selected))
+  const strengthGap = Math.max(0, bestForgivingScore - optionForgivingScore(selected))
+  const recommendationGap = Math.max(0, bestStrengthScore - optionStrengthScore(selected))
   const severeShantenRegression = shantenDifference >= 2 || (shantenDifference > 0 && strengthGap > 24)
-  const grade: DiscardGrade = importantShapeBroken || severeShantenRegression
+  const largeAcceptanceLoss = shantenDifference === 0
+    && improvementTileDifference >= Math.max(12, Math.ceil(bestImprovementTileCount * 0.35))
+  const grade: DiscardGrade = importantShapeBroken || severeShantenRegression || largeAcceptanceLoss
     ? 'bad'
     : shantenDifference > 0
       ? strengthGap <= 8 ? 'good' : 'compromise'
@@ -803,7 +918,7 @@ export function buildDiscardEvaluation(
     best: '◎ 最善級',
     good: '○ 良い打牌',
     compromise: '△ 妥協',
-    bad: '× 悪手寄り',
+    bad: '別候補寄り',
   }
   const shantenText = shantenDifference > 0
     ? `${shantenLabel(bestShanten)}から${shantenLabel(selected.shanten)}へ悪化します。`
@@ -819,13 +934,51 @@ export function buildDiscardEvaluation(
   const riichiEstablished = declaredRiichi && selected.canRiichi
   const showMissedRiichi = selected.canRiichi && !declaredRiichi && !options.playerAlreadyRiichi
   const reachText = showMissedRiichi ? ' 今の打牌、リーチできたよ。' : ''
-  const summary = `${gradeLabels[grade]}：${tileName(selected.discard.code)}切り`
+  const selectedName = tileName(selected.discard.code)
+  const bestNames = uniqueTileNames(bestOptions.map((option) => option.discard))
+  const selectedIsRecommended = bestOptions.some((option) => option.discard.code === selected.discard.code)
+  const whatToDiscardGrade: WhatToDiscardGrade = selectedIsRecommended
+    ? 'recommended'
+    : grade !== 'bad' && (recommendationGap <= 36 || (selected.rank <= Math.min(3, selected.optionCount) && selected.discardShapeCost < 72))
+      ? 'playable'
+      : 'offPlan'
+  const whatToDiscardLabels: Record<WhatToDiscardGrade, string> = {
+    recommended: 'おすすめ一致',
+    playable: '候補圏内',
+    offPlan: '別候補',
+  }
+  const whatToDiscardDetail = whatToDiscardGrade === 'recommended'
+    ? `何切るなら${bestNames}。今の${selectedName}切りはそのまま本線です。`
+    : whatToDiscardGrade === 'playable'
+      ? `何切るなら${bestNames}が第一候補。${selectedName}切りも候補として見られます。`
+      : `何切るなら${bestNames}が第一候補。${selectedName}切りは少し遠回りです。`
+  const liveWaits = selected.improvementTiles
+    .filter((tile) => tile.remaining > 0)
+    .sort((a, b) => b.remaining - a.remaining)
+    .slice(0, 4)
+    .map((tile) => `${tileName(tile.code)}${tile.remaining}枚`)
+  const liveWaitText = liveWaits.length > 0 ? liveWaits.join(' / ') : '目立つ受け入れは少なめ'
+  const tableInsight = `捨て牌込みで見ると、${selectedName}切り後の受け入れは${selected.improvementTypeCount}種${selected.improvementTileCount}枚。主な残りは${liveWaitText}です。${differenceText}`
+  const beginnerAdvice = beginnerDiscardAdvice(
+    selected,
+    bestOptions,
+    shantenDifference,
+    improvementTileDifference,
+    shapeLoss,
+    yakuLoss,
+  )
+  const summary = `${whatToDiscardLabels[whatToDiscardGrade]}：${selectedName}切り`
   const detail = `${shantenText}${differenceText}${evaluationReason(selected, hand14, shapeLoss, structureLoss, yakuLoss)}${reachText}`
 
   return {
     discard: selectedDiscard,
     grade,
     gradeLabel: gradeLabels[grade],
+    whatToDiscardGrade,
+    whatToDiscardLabel: whatToDiscardLabels[whatToDiscardGrade],
+    whatToDiscardDetail,
+    tableInsight,
+    beginnerAdvice,
     shanten: selected.shanten,
     bestShanten,
     shantenDifference,

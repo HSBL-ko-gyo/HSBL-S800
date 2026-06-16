@@ -22,8 +22,8 @@ export const YAKU_INFO: Record<YakuHint, YakuInfoDefinition> = {
     description: '2〜8の数牌だけで作る役。',
     condition: '1・9・字牌を使わない。',
     examples: [
-      { label: 'OK', tone: 'ok', groups: [['2m'], ['5p'], ['8s']] },
-      { label: 'NG', tone: 'ng', groups: [['1m'], ['9s'], ['E']] },
+      { label: '使う', tone: 'ok', groups: [['2m'], ['5p'], ['8s']] },
+      { label: '外れる', tone: 'ng', groups: [['1m'], ['9s'], ['E']] },
     ],
   },
   '役牌候補': {
@@ -50,8 +50,8 @@ export const YAKU_INFO: Record<YakuHint, YakuInfoDefinition> = {
     description: '1種類の数牌と字牌だけで作る役。',
     condition: '他の2種類の数牌を手放す。',
     examples: [
-      { label: 'OK', tone: 'ok', groups: [['2s'], ['6s'], ['E'], ['C']] },
-      { label: 'NG', tone: 'ng', groups: [['5m'], ['3p']] },
+      { label: '使う', tone: 'ok', groups: [['2s'], ['6s'], ['E'], ['C']] },
+      { label: '外れる', tone: 'ng', groups: [['5m'], ['3p']] },
     ],
   },
   '一気通貫候補': {

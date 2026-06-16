@@ -714,8 +714,8 @@ h1 {
 
 .yaku-hints {
   min-width: 0;
-  padding: 11px;
-  border-radius: 11px;
+  padding: 8px 9px;
+  border-radius: 8px;
   background: rgba(0, 0, 0, .12);
 }
 
@@ -726,12 +726,12 @@ h1 {
 }
 
 .hint-chip {
-  padding: 4px 9px;
+  padding: 3px 8px;
   border: 1px solid rgba(232, 200, 121, .28);
   border-radius: 999px;
   background: rgba(232, 200, 121, .1);
   color: #f0db9f;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
 }
 
@@ -742,16 +742,15 @@ h1 {
 
 .evaluation-card {
   min-width: 0;
-  padding: 11px 12px;
+  padding: 10px 11px;
   border: 1px solid transparent;
-  border-radius: 11px;
+  border-radius: 10px;
   background: rgba(0, 0, 0, .15);
 }
 
-.evaluation-card.grade-best { border-color: rgba(232, 200, 121, .55); }
-.evaluation-card.grade-good { border-color: rgba(93, 190, 132, .48); }
-.evaluation-card.grade-compromise { border-color: rgba(226, 159, 67, .45); }
-.evaluation-card.grade-bad { border-color: rgba(214, 99, 83, .55); }
+.evaluation-card.recommendation-recommended { border-color: rgba(232, 200, 121, .5); }
+.evaluation-card.recommendation-playable { border-color: rgba(93, 190, 132, .42); }
+.evaluation-card.recommendation-offPlan { border-color: rgba(226, 159, 67, .42); }
 
 .evaluation-card.is-empty {
   color: rgba(247, 242, 228, .43);
@@ -770,14 +769,13 @@ h1 {
 .evaluation-grade {
   display: block;
   font-family: 'Shippori Mincho B1', serif;
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1.55;
 }
 
-.grade-best .evaluation-grade { color: var(--gold); }
-.grade-good .evaluation-grade { color: #8ce3aa; }
-.grade-compromise .evaluation-grade { color: #f0b66b; }
-.grade-bad .evaluation-grade { color: #f0a195; }
+.recommendation-recommended .evaluation-grade { color: var(--gold); }
+.recommendation-playable .evaluation-grade { color: #8ce3aa; }
+.recommendation-offPlan .evaluation-grade { color: #f0b66b; }
 
 .evaluation-meta,
 .evaluation-deltas {
@@ -802,6 +800,51 @@ h1 {
   color: rgba(247, 242, 228, .7);
   font-size: 11px;
   line-height: 1.65;
+}
+
+.discard-insight-card {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid rgba(247, 242, 228, .12);
+  border-radius: 9px;
+  background: rgba(247, 242, 228, .045);
+}
+
+.discard-insight-card p {
+  margin-top: 6px;
+  color: rgba(247, 242, 228, .66);
+  font-size: 10.5px;
+  line-height: 1.6;
+}
+
+.discard-insight-card .beginner-advice {
+  padding-top: 6px;
+  border-top: 1px dashed rgba(247, 242, 228, .12);
+  color: rgba(232, 200, 121, .86);
+  font-weight: 700;
+}
+
+.beginner-advice b {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--gold);
+  font-size: 9px;
+}
+
+.insight-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.insight-meta span {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .14);
+  color: rgba(247, 242, 228, .72);
+  font-size: 9px;
+  font-weight: 700;
 }
 
 .evaluation-riichi {
@@ -1737,6 +1780,7 @@ h1 {
   .evaluation-card { padding: 14px 15px; }
   .evaluation-card.is-empty { font-size: 13px; }
   .evaluation-grade { font-size: 20px; }
+  .discard-insight-card p { font-size: 12px; }
   .evaluation-meta,
   .evaluation-deltas { font-size: 11px; }
   .evaluation-card p { font-size: 13px; line-height: 1.7; }
@@ -1878,6 +1922,8 @@ h1 {
   .game-layout .evaluation-meta,
   .game-layout .evaluation-deltas { margin-top: 5px; font-size: 10px; }
   .game-layout .evaluation-card p { margin-top: 5px; font-size: 12px; line-height: 1.55; }
+  .game-layout .discard-insight-card { padding: 8px 9px; }
+  .game-layout .discard-insight-card p { font-size: 10px; line-height: 1.5; }
   .game-layout .yaku-info-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
   .game-layout .yaku-info-card { padding: 9px; }
   .game-layout .yaku-info-card h4 { font-size: 13px; }
@@ -1923,6 +1969,7 @@ h1 {
   .game-layout .evaluation-meta,
   .game-layout .evaluation-deltas { font-size: 13px; }
   .game-layout .evaluation-card p { font-size: 16px; line-height: 1.65; }
+  .game-layout .discard-insight-card p { font-size: 13px; }
   .game-layout .yaku-info-card { padding: 12px; }
   .game-layout .yaku-info-card h4 { font-size: 17px; }
   .game-layout .yaku-info-card p { font-size: 14px; line-height: 1.6; }
@@ -2335,6 +2382,8 @@ h1 {
   .hand-plan-card strong { font-size: 14px; }
   .hand-plan-card p { font-size: 10px; }
   .evaluation-grade { font-size: 14px; }
+  .discard-insight-card { padding: 8px; }
+  .discard-insight-card p { font-size: 9.5px; }
   .evaluation-card p { font-size: 10px; }
   .evaluation-meta,
   .evaluation-deltas { font-size: 9px; }

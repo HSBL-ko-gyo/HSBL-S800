@@ -1,5 +1,6 @@
 import { shantenLabel, type DiscardEvaluation, type ImprovementTile, type Tile, type YakuHint } from '../gameEngine'
 import { DiscardEvaluationPanel } from './DiscardEvaluationPanel'
+import { DiscardInsightPanel } from './DiscardInsightPanel'
 import { HandPlanPanel } from './HandPlanPanel'
 import { RiichiWaitPanel } from './RiichiWaitPanel'
 import { YakuInfoPanel } from './YakuInfoPanel'
@@ -75,13 +76,14 @@ export function LearningPanel({
       </div>
 
       <HandPlanPanel advice={handPlan} />
+      <DiscardInsightPanel evaluation={evaluation} />
       <RiichiWaitPanel waits={riichiWaits} />
 
       <section className="yaku-hints">
         <span className="learning-label">狙える役</span>
         <div className="hint-chips">
           {yakuHints.length > 0
-            ? yakuHints.map((hint) => <span className="hint-chip" key={hint}>{hint}</span>)
+            ? yakuHints.slice(0, 3).map((hint) => <span className="hint-chip" key={hint}>{hint}</span>)
             : <span className="hint-empty">まだ形を探しているところ</span>}
         </div>
       </section>
