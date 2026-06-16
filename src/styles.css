@@ -1979,11 +1979,26 @@ h1 {
     font-size: 9px;
   }
   .reaction-panel {
-    width: calc(100vw - 34px);
+    position: fixed;
+    z-index: 20;
+    left: 50%;
+    right: auto;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+    width: min(360px, calc(100vw - 28px));
+    max-height: min(58vh, 420px);
+    max-height: min(58svh, 420px);
     align-items: stretch;
     flex-direction: column;
     gap: 8px;
     padding: 9px;
+    margin: 0;
+    overflow-y: auto;
+    transform: translateX(-50%);
+    border-color: rgba(232, 200, 121, .5);
+    background: rgba(12, 31, 25, .96);
+    box-shadow:
+      0 0 0 1px rgba(247, 242, 228, .06),
+      0 14px 34px rgba(0, 0, 0, .52);
   }
   .reaction-panel strong { font-size: 16px; }
   .reaction-actions {

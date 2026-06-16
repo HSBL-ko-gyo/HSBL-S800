@@ -265,7 +265,7 @@ export function TableView({
           />
           <MeldView melds={game.players[0].melds} />
           {game.phase === 'reaction_review' && (
-            <section className="reaction-panel" aria-label={reactionReviewLabel}>
+            <section className="reaction-panel" role="dialog" aria-label={reactionReviewLabel}>
               <div>
                 <span className="reaction-kicker">{reactionReviewLabel}</span>
                 <strong>{reactionReviewQuestion}</strong>
@@ -277,7 +277,7 @@ export function TableView({
             </section>
           )}
           {game.phase === 'declare_reaction' && (
-            <section className="reaction-panel declare-panel" aria-label="宣言選択">
+            <section className="reaction-panel declare-panel" role="dialog" aria-label="宣言選択">
               <div>
                 <span className="reaction-kicker">宣言選択</span>
                 <strong>対象の捨て牌を選択</strong>
