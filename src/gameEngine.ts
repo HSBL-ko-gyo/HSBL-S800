@@ -66,6 +66,7 @@ export interface DiscardOptionAnalysis {
   yakuHints: YakuHint[]
   canRiichi: boolean
   goodShapeCount: number
+  liveShapeScore: number
   structureScore: number
   isolatedDiscard: boolean
   evaluationScore: number
@@ -469,6 +470,8 @@ export function canRiichiAfterDiscard(hand14: Tile[], discardTile: Tile): boolea
 }
 
 function compareOptions(a: DiscardOptionAnalysis, b: DiscardOptionAnalysis): number {
+  const strengthDifference = optionStrengthScore(b) - optionStrengthScore(a)
+  if (strengthDifference !== 0) return strengthDifference
   if (a.shanten !== b.shanten) return a.shanten - b.shanten
   return b.evaluationScore - a.evaluationScore
 }
@@ -482,6 +485,48 @@ function countGoodShapes(tiles: Tile[]): number {
     }
   }
   return total
+}
+
+function remainingTileCount(code: TileCode, visibleCounts: number[]): number {
+  return Math.max(0, 4 - visibleCounts[CODE_ORDER.get(code) ?? 0])
+}
+
+function suitCode(offset: number, number: number): TileCode {
+  return TILE_CODES[offset + number - 1] as TileCode
+}
+
+function calculateLiveShapeScore(tiles: Tile[], visibleTiles: Tile[]): number {
+  const counts = toCounts(tiles)
+  const visibleCounts = toCounts([...tiles, ...visibleTiles])
+  let score = 0
+
+  for (const offset of [0, 9, 18]) {
+    for (let number = 1; number <= 9; number += 1) {
+      const index = offset + number - 1
+      if (counts[index] === 0) continue
+
+      if (counts[index] >= 2) {
+        score += Math.min(2, remainingTileCount(suitCode(offset, number), visibleCounts))
+      }
+
+      if (number <= 8 && counts[index + 1] > 0) {
+        const left = number > 1 ? remainingTileCount(suitCode(offset, number - 1), visibleCounts) : 0
+        const right = number < 8 ? remainingTileCount(suitCode(offset, number + 2), visibleCounts) : 0
+        score += left + right
+      }
+
+      if (number <= 7 && counts[index + 2] > 0) {
+        score += remainingTileCount(suitCode(offset, number + 1), visibleCounts)
+      }
+    }
+  }
+
+  for (const code of HONOR_CODES) {
+    const index = CODE_ORDER.get(code) ?? 0
+    if (counts[index] >= 2) score += Math.min(2, remainingTileCount(code, visibleCounts))
+  }
+
+  return score
 }
 
 function calculateStructureScore(tiles: Tile[]): number {
@@ -510,6 +555,10 @@ function isIsolatedDiscard(discard: Tile, hand: Tile[]): boolean {
   )
 }
 
+function optionStrengthScore(option: DiscardOptionAnalysis): number {
+  return option.evaluationScore - option.shanten * 60 + (option.canRiichi ? 18 : 0)
+}
+
 export function analyzeDiscardOptions(
   hand14: Tile[],
   visibleTiles: Tile[] = [],
@@ -525,6 +574,7 @@ export function analyzeDiscardOptions(
     const improvementTileCount = improvementTiles.reduce((sum, tile) => sum + tile.remaining, 0)
     const yakuHints = getYakuHints(postHand)
     const goodShapeCount = countGoodShapes(postHand)
+    const liveShapeScore = calculateLiveShapeScore(postHand, [...visibleTiles, discard])
     const structureScore = calculateStructureScore(postHand)
     const isolatedDiscard = isIsolatedDiscard(discard, hand14)
     return {
@@ -536,12 +586,14 @@ export function analyzeDiscardOptions(
       yakuHints,
       canRiichi: meldCount === 0 && isTenpai(postHand),
       goodShapeCount,
+      liveShapeScore,
       structureScore,
       isolatedDiscard,
       evaluationScore:
         improvementTileCount * 10
         + improvementTypeCount * 4
         + goodShapeCount * 5
+        + liveShapeScore * 3
         + structureScore * 2
         + yakuHints.length * 3
         + (isolatedDiscard ? 4 : 0),
@@ -724,28 +776,29 @@ export function buildDiscardEvaluation(
     postHand: sortTiles(hand14.filter((tile) => tile.id !== selectedDiscard.id)),
   }
   const bestShanten = Math.min(...analysis.map((option) => option.shanten))
-  const bestShantenOptions = analysis.filter((option) => option.shanten === bestShanten)
-  const bestImprovementTileCount = Math.max(...bestShantenOptions.map((option) => option.improvementTileCount))
-  const bestEvaluationScore = Math.max(...bestShantenOptions.map((option) => option.evaluationScore))
-  const bestOptions = bestShantenOptions.filter((option) => option.evaluationScore === bestEvaluationScore)
+  const bestStrengthScore = Math.max(...analysis.map(optionStrengthScore))
+  const bestOptions = analysis.filter((option) => optionStrengthScore(option) === bestStrengthScore)
+  const bestImprovementTileCount = Math.max(...bestOptions.map((option) => option.improvementTileCount))
   const bestGoodShapeCount = Math.max(...bestOptions.map((option) => option.goodShapeCount))
   const bestStructureScore = Math.max(...bestOptions.map((option) => option.structureScore))
   const bestYakuCount = Math.max(...bestOptions.map((option) => option.yakuHints.length))
   const shantenDifference = selected.shanten - bestShanten
-  const improvementTileDifference = shantenDifference > 0
-    ? null
-    : Math.max(0, bestImprovementTileCount - selected.improvementTileCount)
+  const improvementTileDifference = Math.max(0, bestImprovementTileCount - selected.improvementTileCount)
   const shapeLoss = Math.max(0, bestGoodShapeCount - selected.goodShapeCount)
   const structureLoss = Math.max(0, bestStructureScore - selected.structureScore)
   const yakuLoss = Math.max(0, bestYakuCount - selected.yakuHints.length)
   const importantShapeBroken = shapeLoss >= 2 || structureLoss >= 4
-  const grade: DiscardGrade = shantenDifference > 0 || importantShapeBroken
+  const strengthGap = Math.max(0, bestStrengthScore - optionStrengthScore(selected))
+  const severeShantenRegression = shantenDifference >= 2 || (shantenDifference > 0 && strengthGap > 24)
+  const grade: DiscardGrade = importantShapeBroken || severeShantenRegression
     ? 'bad'
-    : improvementTileDifference !== null && improvementTileDifference <= 2
-      ? 'best'
-      : improvementTileDifference !== null && improvementTileDifference <= 5
-        ? 'good'
-        : 'compromise'
+    : shantenDifference > 0
+      ? strengthGap <= 8 ? 'good' : 'compromise'
+      : strengthGap <= 8 || improvementTileDifference <= 2
+        ? 'best'
+        : improvementTileDifference <= 5 || (strengthGap <= 16 && improvementTileDifference <= 7)
+          ? 'good'
+          : 'compromise'
   const gradeLabels: Record<DiscardGrade, string> = {
     best: '◎ 最善級',
     good: '○ 良い打牌',
@@ -756,7 +809,9 @@ export function buildDiscardEvaluation(
     ? `${shantenLabel(bestShanten)}から${shantenLabel(selected.shanten)}へ悪化します。`
     : `${shantenLabel(selected.shanten)}維持。`
   const differenceText = shantenDifference > 0
-    ? 'シャンテン数を戻すため、受け入れ比較以前に大きな損です。'
+    ? severeShantenRegression
+      ? 'シャンテン数を戻す損が大きく、場に残っている受け入れでも補いにくいです。'
+      : `シャンテンは戻りますが、場に残っている受け入れは${selected.improvementTypeCount}種${selected.improvementTileCount}枚あり、形の厚さで補えています。`
     : improvementTileDifference === 0
       ? '受け入れ枚数は最善候補と同じです。'
       : `受け入れは${selected.improvementTypeCount}種${selected.improvementTileCount}枚で、最善候補との差は${improvementTileDifference}枚です。`

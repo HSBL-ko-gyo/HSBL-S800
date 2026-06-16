@@ -490,6 +490,16 @@ describe('yaku hints', () => {
 })
 
 describe('discard evaluations', () => {
+  it('discounts shapes whose nearby tiles are already visible on the table', () => {
+    const hand = codesToTiles(['2m', '3m', '5m', '6m', '7m', '2p', '3p', '4p', '5p', '6p', '2s', '3s', '7s', '9s'])
+    const openOption = analyzeDiscardOptions(hand).find((option) => option.discard.code === '9s')
+    const deadOption = analyzeDiscardOptions(hand, codesToTiles(['1m', '1m', '1m', '4m', '4m', '4m']))
+      .find((option) => option.discard.code === '9s')
+
+    expect(openOption?.liveShapeScore).toBeGreaterThan(deadOption?.liveShapeScore ?? 0)
+    expect(openOption?.evaluationScore).toBeGreaterThan(deadOption?.evaluationScore ?? 0)
+  })
+
   it('updates with grade, rank, shanten change, and acceptance gap after a discard', () => {
     const hand = codesToTiles([...tenpaiBase, 'E'])
     const analysis = analyzeDiscardOptions(hand)
@@ -529,7 +539,19 @@ describe('discard evaluations', () => {
     expect(buildDiscardEvaluation(selectedBase.discard, [best, { ...selectedBase, improvementTileCount: 12 }], hand).grade).toBe('compromise')
     const regressed = buildDiscardEvaluation(selectedBase.discard, [best, { ...selectedBase, shanten: 3, improvementTileCount: 20 }], hand)
     expect(regressed.grade).toBe('bad')
-    expect(regressed.improvementTileDifference).toBeNull()
+    expect(regressed.detail).toContain('補いにくい')
+  })
+
+  it('does not automatically mark a one-shanten regression as bad when live acceptance is much wider', () => {
+    const hand = codesToTiles([...tenpaiBase, 'E'])
+    const base = analyzeDiscardOptions(hand)
+    const faster = { ...base[0], shanten: 1, improvementTileCount: 2, improvementTypeCount: 1, evaluationScore: 80, goodShapeCount: 1, liveShapeScore: 0, structureScore: 4, yakuHints: [], rank: 1, optionCount: 2 }
+    const wider = { ...base[1], shanten: 2, improvementTileCount: 18, improvementTypeCount: 8, evaluationScore: 260, goodShapeCount: 3, liveShapeScore: 20, structureScore: 10, yakuHints: [], rank: 2, optionCount: 2 }
+    const evaluation = buildDiscardEvaluation(wider.discard, [faster, wider], hand)
+
+    expect(evaluation.grade).toBe('good')
+    expect(evaluation.shantenDifference).toBe(1)
+    expect(evaluation.detail).toContain('形の厚さで補えています')
   })
 
   it('keeps the evaluated tile identical to the actual latest discard', () => {
