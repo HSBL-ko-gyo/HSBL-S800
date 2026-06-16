@@ -5,6 +5,7 @@ import { useMediaQuery } from '../useMediaQuery'
 import { TileView } from './TileView'
 
 const DISCARD_SWIPE_THRESHOLD = 48
+const TOUCH_LAYOUT_QUERY = '(max-width: 780px)'
 const SUITS = ['m', 'p', 's'] as const
 
 type BlockKind = 'meld' | 'pair' | 'ryanmen' | 'kanchan' | 'penchan' | 'floating'
@@ -223,7 +224,7 @@ export function HandView({
   const handBlockSegments = buildHandBlockSegments(handBlocks, displayed)
   const blockSummary = handBlocks.map((block) => block.label).join('、')
   const blockTactic = getBlockTactic(handBlocks)
-  const isMobileLayout = useMediaQuery('(max-width: 480px)')
+  const isMobileLayout = useMediaQuery(TOUCH_LAYOUT_QUERY)
 
   const syncOverviewWindow = () => {
     const rail = handRef.current
@@ -272,7 +273,7 @@ export function HandView({
   }
 
   const handleOverviewPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (!window.matchMedia('(max-width: 480px)').matches) return
+    if (!window.matchMedia(TOUCH_LAYOUT_QUERY).matches) return
     if (event.pointerType === 'mouse' && event.button !== 0) return
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
@@ -330,12 +331,12 @@ export function HandView({
   }, [selectedTileId])
 
   const handleTileClick = (tile: Tile) => {
-    if (window.matchMedia('(max-width: 480px)').matches) return
+    if (window.matchMedia(TOUCH_LAYOUT_QUERY).matches) return
     onDiscard(tile)
   }
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (!canDiscard || !window.matchMedia('(max-width: 480px)').matches) return
+    if (!canDiscard || !window.matchMedia(TOUCH_LAYOUT_QUERY).matches) return
     if (event.pointerType === 'mouse' && event.button !== 0) return
     const tileId = (event.target as Element)
       .closest<HTMLElement>('[data-hand-tile-id]')

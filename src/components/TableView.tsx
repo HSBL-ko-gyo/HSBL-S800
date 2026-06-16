@@ -35,6 +35,7 @@ interface TableViewProps {
 }
 
 const SEATS = ['south', 'east', 'north', 'west'] as const
+const TOUCH_LAYOUT_QUERY = '(max-width: 780px)'
 const AFFILIATE_BOOKS = [
   {
     title: 'アカギ',
@@ -179,7 +180,7 @@ export function TableView({
   const yakuHints = getYakuHints(game.players[0].hand)
   const riichiWaits = getRiichiWaitTiles(game)
   const hasFourRowRiver = game.players.some((player) => player.river.length >= 19)
-  const isMobileLayout = useMediaQuery('(max-width: 480px)')
+  const isMobileLayout = useMediaQuery(TOUCH_LAYOUT_QUERY)
   const hasRonReaction = game.pendingReactionEvents.some((event) => event.canRon)
   const hasOpenReaction = game.pendingReactionEvents.some((event) => event.canPon || event.canChi)
   const isRonOnlyReaction = hasRonReaction && !hasOpenReaction

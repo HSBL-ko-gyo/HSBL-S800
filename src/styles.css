@@ -1834,7 +1834,7 @@ h1 {
   .yaku-info-grid { grid-template-columns: 1fr 1fr; }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 780px) {
   .win-celebration span:nth-child(n + 21) {
     display: none;
   }
@@ -2237,4 +2237,36 @@ h1 {
   .affiliate-book-card b { font-size: 12px; }
   .result-affiliate small { font-size: 10px; }
   .history-title { font-size: 11px; }
+}
+
+@media (min-width: 481px) and (max-width: 780px) {
+  .mobile-call-toggle {
+    left: 28px;
+    top: 112px;
+    padding: 6px 10px;
+    font-size: 10px;
+  }
+
+  .mobile-hand-control {
+    --rail-width: min(560px, calc(100vw - 72px));
+    --rail-tile-width: 52px;
+    --rail-gap: 3px;
+  }
+
+  .hand.mobile-hand-rail {
+    min-height: 124px;
+  }
+
+  .reaction-panel {
+    width: min(430px, calc(100vw - 48px));
+  }
+
+  .learning-panel {
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .yaku-info-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
