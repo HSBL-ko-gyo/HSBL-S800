@@ -111,13 +111,6 @@ button.tile:active {
 .tile .honor.chun { color: var(--chun); }
 .tile .honor.hatsu { color: var(--hatsu); }
 
-.tile .haku {
-  width: 62%;
-  height: 72%;
-  border: max(2px, calc(var(--tile-width) * .055)) solid #c8bfae;
-  border-radius: calc(var(--tile-width) * .09);
-}
-
 .tile.static { cursor: default; }
 .tile.picked-right { box-shadow: 0 5px 0 var(--hatsu), 0 0 0 3px var(--hatsu), 0 8px 10px rgba(0, 0, 0, .45); }
 .tile.picked-wrong { box-shadow: 0 5px 0 var(--chun), 0 0 0 3px var(--chun), 0 8px 10px rgba(0, 0, 0, .45); }
