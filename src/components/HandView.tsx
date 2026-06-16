@@ -500,6 +500,7 @@ export function HandView({
         className={`mobile-block-guide ${blockGuidesHidden ? 'block-guide-hidden' : ''}`}
         aria-hidden={blockGuidesHidden}
         aria-label={blockGuidesHidden ? undefined : `ブロック補助: ${blockSummary}`}
+        style={{ '--block-tile-count': displayed.length } as CSSProperties}
       >
         {handBlockSegments.map((block) => (
           <span

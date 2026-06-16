@@ -425,6 +425,7 @@ describe('reaction declaration MVP', () => {
     const html = renderTable(called)
     expect(html).toContain('called-tile from-left')
     expect(html).toContain('--block-tile-count:11')
+    expect(html).toMatch(/class="mobile-block-guide[^"]*"[^>]*style="--block-tile-count:11"/)
   })
 
   it('declares chi only from kamicha and keeps riichi unavailable after calling', () => {

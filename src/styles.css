@@ -2063,10 +2063,10 @@ h1 {
   .mobile-block-count-guide small { display: none; }
   .mobile-block-guide {
     display: grid;
-    grid-template-columns: repeat(14, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--block-tile-count, 14), minmax(0, 1fr));
     width: calc(100vw - 48px);
     min-height: 15px;
-  margin: -3px auto 1px;
+    margin: -3px auto 1px;
     gap: 1px;
     padding: 0 5px;
     pointer-events: none;
