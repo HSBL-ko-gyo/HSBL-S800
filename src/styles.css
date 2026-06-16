@@ -2017,6 +2017,7 @@ h1 {
     flex-direction: column;
   }
   .mobile-hand-overview {
+    --overview-tile-width: calc((100vw - 58px) / 14);
     display: flex;
     position: relative;
     min-height: 40px;
@@ -2041,12 +2042,12 @@ h1 {
   }
   .mobile-overview-slot {
     display: flex;
-    width: calc((100vw - 58px) / 14);
-    flex: 0 0 calc((100vw - 58px) / 14);
+    width: var(--overview-tile-width);
+    flex: 0 0 var(--overview-tile-width);
     justify-content: center;
   }
   .mobile-hand-overview .tile.hand {
-    --tile-width: calc((100vw - 58px) / 14);
+    --tile-width: var(--overview-tile-width);
   }
   .mobile-hand-overview .tile.overview-selected {
     box-shadow: 0 calc(var(--tile-width) * .09) 0 var(--amber), 0 0 0 1px var(--gold), 0 calc(var(--tile-width) * .13) calc(var(--tile-width) * .18) rgba(0, 0, 0, .45);
@@ -2245,6 +2246,13 @@ h1 {
     top: 112px;
     padding: 6px 10px;
     font-size: 10px;
+  }
+
+  .mobile-hand-overview {
+    --overview-tile-width: min(34px, calc((100vw - 240px) / 14));
+    min-height: 30px;
+    gap: 2px;
+    padding: 2px 12px 5px;
   }
 
   .mobile-hand-control {
