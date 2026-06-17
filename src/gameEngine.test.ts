@@ -18,15 +18,23 @@ const simplePinfuTsumo: TileCode[] = [
   '2m', '3m', '4m',
   '6m', '7m', '8m',
   '3p', '4p', '5p',
-  '4s', '5s', '6s',
   '2s', '2s',
+  '4s', '5s', '6s',
+]
+const edgeWaitRiichiRon: TileCode[] = [
+  '1m', '2m',
+  '4m', '5m', '6m',
+  '2p', '3p', '4p',
+  '3s', '4s', '5s',
+  '7p', '7p',
+  '3m',
 ]
 const manganTsumo: TileCode[] = [
   '2m', '3m', '4m',
   '2p', '3p', '4p',
-  '2s', '3s', '4s',
   '6m', '7m', '8m',
   '5s', '5s',
+  '2s', '3s', '4s',
 ]
 
 describe('game engine', () => {
@@ -59,6 +67,12 @@ describe('game engine', () => {
     expect(pinfuGroups).toHaveLength(5)
     expect(pinfuGroups?.slice(0, 4).every((group) => group.label === '順子' && group.tiles.length === 3)).toBe(true)
     expect(pinfuGroups?.at(-1)).toMatchObject({ label: '雀頭', tiles: ['2s', '2s'] })
+  })
+
+  it('does not label edge waits as pinfu', () => {
+    const score = calculateWinningScore(edgeWaitRiichiRon, 'ron', { riichi: true })
+    expect(score.yaku.map((yaku) => yaku.name)).toEqual(['立直'])
+    expect(score.yaku.some((yaku) => yaku.name === '平和')).toBe(false)
   })
 
   it('labels limit hands such as mangan', () => {

@@ -270,6 +270,32 @@ function countSequenceCandidates(counts: number[]): number {
   return total
 }
 
+function countCompletedSequenceBlocks(counts: number[]): number {
+  const working = [...counts]
+  let total = 0
+  for (const offset of [0, 9, 18]) {
+    for (let start = 1; start <= 7; start += 1) {
+      const indexes = [offset + start - 1, offset + start, offset + start + 1]
+      while (indexes.every((index) => working[index] > 0)) {
+        indexes.forEach((index) => { working[index] -= 1 })
+        total += 1
+      }
+    }
+  }
+  return total
+}
+
+function maxCompletedSequencesAfterSimplePair(counts: number[]): number {
+  let best = 0
+  for (let pairIndex = 0; pairIndex < 27; pairIndex += 1) {
+    if (counts[pairIndex] < 2) continue
+    const withoutPair = [...counts]
+    withoutPair[pairIndex] -= 2
+    best = Math.max(best, countCompletedSequenceBlocks(withoutPair))
+  }
+  return best
+}
+
 function hasStraight(counts: number[], offset: number): boolean {
   return [1, 4, 7].every((start) =>
     [start, start + 1, start + 2].every((number) => counts[offset + number - 1] > 0),
@@ -325,12 +351,75 @@ function findSequenceOnlyGroups(counts: number[]): TileCode[][] | null {
   return search() ? groups : null
 }
 
-function pinfuTileGroups(counts: number[]): ScoreYakuTileGroup[] | undefined {
+function isValuePairCode(
+  code: TileCode,
+  playerWindTile: Extract<TileCode, 'E' | 'S' | 'W' | 'N'>,
+  roundWindTile: Extract<TileCode, 'E' | 'S' | 'W' | 'N'>,
+): boolean {
+  return code === playerWindTile
+    || code === roundWindTile
+    || code === 'P'
+    || code === 'F'
+    || code === 'C'
+}
+
+function isTwoSidedSequenceWait(sequence: TileCode[], winningCode: TileCode): boolean {
+  if (winningCode.length !== 2 || sequence.length !== 3) return false
+  if (!sequence.includes(winningCode)) return false
+  const suit = winningCode[1]
+  if (sequence.some((code) => code.length !== 2 || code[1] !== suit)) return false
+
+  const start = Number(sequence[0][0])
+  const winningNumber = Number(winningCode[0])
+  if (winningNumber === start) return start <= 6
+  if (winningNumber === start + 2) return start >= 2
+  return false
+}
+
+function findSequenceOnlyGroupsWithTwoSidedWait(counts: number[], winningCode: TileCode): TileCode[][] | null {
+  const working = [...counts]
+  const groups: TileCode[][] = []
+
+  const search = (): TileCode[][] | null => {
+    const index = working.findIndex((count) => count > 0)
+    if (index === -1) {
+      return groups.some((sequence) => isTwoSidedSequenceWait(sequence, winningCode))
+        ? groups.map((group) => [...group])
+        : null
+    }
+    if (index >= 27 || index % 9 > 6) return null
+    if (working[index + 1] <= 0 || working[index + 2] <= 0) return null
+
+    working[index] -= 1
+    working[index + 1] -= 1
+    working[index + 2] -= 1
+    groups.push([TILE_CODES[index], TILE_CODES[index + 1], TILE_CODES[index + 2]])
+
+    const found = search()
+    if (found) return found
+
+    groups.pop()
+    working[index] += 1
+    working[index + 1] += 1
+    working[index + 2] += 1
+    return null
+  }
+
+  return search()
+}
+
+function pinfuTileGroups(
+  counts: number[],
+  winningCode: TileCode,
+  playerWindTile: Extract<TileCode, 'E' | 'S' | 'W' | 'N'>,
+  roundWindTile: Extract<TileCode, 'E' | 'S' | 'W' | 'N'>,
+): ScoreYakuTileGroup[] | undefined {
   for (const [pairIndex, count] of counts.entries()) {
     if (count < 2) continue
+    if (isValuePairCode(TILE_CODES[pairIndex], playerWindTile, roundWindTile)) continue
     const withoutPair = [...counts]
     withoutPair[pairIndex] -= 2
-    const sequences = findSequenceOnlyGroups(withoutPair)
+    const sequences = findSequenceOnlyGroupsWithTwoSidedWait(withoutPair, winningCode)
     if (!sequences || sequences.length !== 4) continue
     return [
       ...sequences.map((tiles) => ({ label: '順子', tiles })),
@@ -556,13 +645,9 @@ export function getYakuHints(hand: Array<Tile | TileCode>): YakuHint[] {
   )
   if (sanshokuCandidate) hints.push('三色同順候補')
 
-  let sequenceCandidates = 0
-  for (const offset of [0, 9, 18]) {
-    for (let start = 1; start <= 7; start += 1) {
-      if (hasSequenceCandidate(counts, offset, start)) sequenceCandidates += 1
-    }
-  }
-  if (sequenceCandidates >= 3 && pairCount >= 1 && tripletCount <= 1) hints.push('平和寄り')
+  const simplePair = counts.slice(0, 27).some((count) => count >= 2)
+  const completedSequencesWithPair = maxCompletedSequencesAfterSimplePair(counts)
+  if (simplePair && completedSequencesWithPair >= 2 && tripletCount === 0) hints.push('平和寄り')
 
   return hints
 }
@@ -1137,15 +1222,16 @@ export function calculateWinningScore(
   const tripletIndexes = counts.flatMap((count, index) => count >= 3 ? [index] : [])
   const sevenPairs = pairs === 7
   const valuePairFu = getValuePairFu(counts, playerWindTile, roundWindTile)
-  const pinfuLike = !sevenPairs
-    && tripletIndexes.length === 0
-    && valuePairFu === 0
-    && countSequenceCandidates(counts) >= 4
+  const winningCode = codes.at(-1)
+  const pinfuGroups = winningCode && !sevenPairs
+    ? pinfuTileGroups(counts, winningCode, playerWindTile, roundWindTile)
+    : undefined
+  const pinfuLike = Boolean(pinfuGroups)
 
   if (options.riichi) addYaku('立直', 1, undefined, '宣言でついた役')
   if (winType === 'tsumo') addYaku('門前清自摸和', 1, undefined, '門前で自分が引いた和了')
   if (codes.every((code) => !isTerminalOrHonor(code))) addYaku('断么九', 1, allTileGroup(codes, '2〜8のみ'))
-  if (pinfuLike) addYaku('平和', 1, pinfuTileGroups(counts) ?? allTileGroup(codes, '順子形'))
+  if (pinfuGroups) addYaku('平和', 1, pinfuGroups)
   if (sevenPairs) addYaku('七対子', 2, sevenPairsTileGroups(counts))
 
   for (const code of ['E', 'S', 'W', 'N'] as const) {

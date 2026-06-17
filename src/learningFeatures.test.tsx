@@ -297,9 +297,9 @@ describe('riichi learning flow', () => {
       roundScore: calculateWinningScore([
         '2m', '3m', '4m',
         '2p', '3p', '4p',
-        '2s', '3s', '4s',
         '6m', '7m', '8m',
         '5s', '5s',
+        '2s', '3s', '4s',
       ], 'tsumo', { riichi: true }),
     }
     const html = renderTable(state)
@@ -678,6 +678,13 @@ describe('yaku memo cards', () => {
     expect(html).toContain('(ヤクハイ)')
     expect(html).not.toContain('NG')
     expect(html).not.toContain('リーチ')
+  })
+
+  it('does not show a pinfu-leaning memo when only the pair is an honor tile', () => {
+    const hand = codesToTiles(['E', 'E', '2m', '3m', '4m', '3p', '4p', '5p', '4s', '5s', '6s', '7p', '8p'])
+    const hints = getYakuHints(hand)
+    expect(hints).toContain('役牌候補')
+    expect(hints).not.toContain('平和寄り')
   })
 
   it('keeps a yori-style yaku memo visible for learning', () => {
