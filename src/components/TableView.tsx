@@ -212,9 +212,9 @@ export function TableView({
   const riichiWaits = getRiichiWaitTiles(game)
   const hasFourRowRiver = game.players.some((player) => player.river.length >= 19)
   const isMobileLayout = useMediaQuery(TOUCH_LAYOUT_QUERY)
-  const hasRonReaction = game.pendingReactionEvents.some((event) => event.canRon)
+  const hasRawRonReaction = game.pendingReactionEvents.some((event) => event.rawCanRon)
   const hasOpenReaction = game.pendingReactionEvents.some((event) => event.canPon || event.canChi)
-  const isRonOnlyReaction = hasRonReaction && !hasOpenReaction
+  const isRonOnlyReaction = hasRawRonReaction && !hasOpenReaction
   const reactionReviewLabel = isRonOnlyReaction ? 'ロン確認' : 'ツモ前確認'
   const reactionReviewQuestion = isRonOnlyReaction ? 'ロンする？' : '宣言する？'
   const reactionReviewActionLabel = isRonOnlyReaction ? 'ロン確認' : '宣言する'
@@ -325,6 +325,13 @@ export function TableView({
                 )}
                 {game.pendingReactionEvents.map((event) => {
                   const chiOptions = event.canChi ? getChiOptions(game.players[0].hand, event.tile) : []
+                  const furitenReason = event.furitenInfo?.reason === 'discard'
+                    ? '自分の捨て牌に待ち牌があります'
+                    : event.furitenInfo?.reason === 'riichi'
+                      ? 'リーチ後見逃しフリテン中です'
+                      : event.furitenInfo?.reason === 'temporary'
+                        ? '一時フリテン中です'
+                        : 'フリテン中です'
                   return (
                     <div className="reaction-event" key={event.id}>
                       <div className="reaction-target">
@@ -334,6 +341,9 @@ export function TableView({
                       <div className="reaction-actions">
                         {event.canRon && (
                           <button type="button" onClick={() => onDeclareReaction('ron', event.id)}>ロン</button>
+                        )}
+                        {event.rawCanRon && event.ronBlockedReason === 'furiten' && (
+                          <span className="reaction-blocked">ロン不可: {furitenReason}</span>
                         )}
                         {event.canPon && (
                           <button type="button" onClick={() => onDeclareReaction('pon', event.id)}>ポン</button>

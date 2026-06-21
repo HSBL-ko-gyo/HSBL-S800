@@ -49,6 +49,7 @@ describe('game engine', () => {
     const game = createInitialGame(fixedRandom)
     expect(game.players.map((player) => player.hand.length)).toEqual([13, 13, 13, 13])
     expect(game.wall).toHaveLength(70)
+    expect(game.deadWall).toHaveLength(14)
   })
 
   it('calculates a simple dealer riichi pinfu tsumo score', () => {
@@ -141,7 +142,9 @@ describe('game engine', () => {
     }
 
     expect(game.wall).toHaveLength(0)
+    expect(game.deadWall).toHaveLength(14)
     expect(game.turnNumber).toBe(70)
     expect(game.players.reduce((total, player) => total + player.river.length, 0)).toBe(70)
+    expect(game.eventLog.some((event) => event.type === 'RULE_ERROR')).toBe(false)
   })
 })

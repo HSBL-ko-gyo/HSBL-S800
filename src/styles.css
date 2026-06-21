@@ -516,6 +516,19 @@ h1 {
   background: rgba(232, 200, 121, .16);
 }
 
+.reaction-blocked {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 5px 9px;
+  border: 1px solid rgba(232, 200, 121, .28);
+  border-radius: 8px;
+  background: rgba(232, 200, 121, .12);
+  color: rgba(247, 242, 228, .86);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .declare-panel {
   display: grid;
   grid-template-columns: 1fr;

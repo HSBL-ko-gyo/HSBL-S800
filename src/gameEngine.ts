@@ -1,3 +1,5 @@
+import { validateGameState } from './rules/validateGameState'
+
 export const SUIT_CODES = [
   '1m', '2m', '3m', '4m', '5m', '6m', '7m', '8m', '9m',
   '1p', '2p', '3p', '4p', '5p', '6p', '7p', '8p', '9p',
@@ -165,12 +167,25 @@ export interface HandPlanAdvice {
 export interface RollbackSnapshot {
   players: PlayerState[]
   wall: Tile[]
+  deadWall: Tile[]
   currentPlayer: PlayerId
   phase: GamePhase
   awaitingDiscard: boolean
   drawnTileId: string | null
   turnNumber: number
   lastDiscard: { playerIndex: number; tileId: string } | null
+  temporaryFuriten: boolean
+  riichiFuriten: boolean
+}
+
+export interface FuritenInfo {
+  isFuriten: boolean
+  discardFuriten: boolean
+  temporaryFuriten: boolean
+  riichiFuriten: boolean
+  waitTiles: TileCode[]
+  discardedWaitTiles: TileCode[]
+  reason: 'discard' | 'temporary' | 'riichi' | null
 }
 
 export interface ReactionEvent {
@@ -180,6 +195,9 @@ export interface ReactionEvent {
   riverDiscardId: string
   turnIndex: number
   canRon: boolean
+  rawCanRon: boolean
+  ronBlockedReason?: 'furiten'
+  furitenInfo?: FuritenInfo
   canPon: boolean
   canChi: boolean
   snapshot: RollbackSnapshot
@@ -194,6 +212,23 @@ export interface CallLog {
   reason?: string
 }
 
+export type GameEvent =
+  | { type: 'INIT_GAME'; wallCount: number; deadWallCount: number }
+  | { type: 'DRAW'; player: PlayerId; tile: TileCode; wallRemaining: number }
+  | { type: 'DISCARD'; player: PlayerId; tile: TileCode }
+  | { type: 'REACTION_REVIEW'; tile: TileCode; canRon: boolean; canPon: boolean; canChi: boolean }
+  | { type: 'FURITEN_CHECK'; player: PlayerId; isFuriten: boolean; reason: string | null; waitTiles: TileCode[] }
+  | { type: 'RON_BLOCKED_BY_FURITEN'; player: PlayerId; tile: TileCode; reason: string }
+  | { type: 'SKIP_RON'; player: PlayerId; tile: TileCode }
+  | { type: 'TEMP_FURITEN_START'; player: PlayerId }
+  | { type: 'TEMP_FURITEN_CLEAR'; player: PlayerId }
+  | { type: 'RIICHI_FURITEN_START'; player: PlayerId }
+  | { type: 'DECLARE_RIICHI'; player: PlayerId }
+  | { type: 'DECLARE_CALL'; call: 'ron' | 'pon' | 'chi'; player: PlayerId; tile: TileCode }
+  | { type: 'WIN'; winType: 'ron' | 'tsumo'; player: PlayerId }
+  | { type: 'DRAW_GAME' }
+  | { type: 'RULE_ERROR'; ruleId: string; message: string }
+
 export interface GameState {
   status: 'playing' | 'draw' | 'win'
   phase: GamePhase
@@ -201,6 +236,7 @@ export interface GameState {
   roundScore: RoundScore | null
   winningHand: Tile[] | null
   wall: Tile[]
+  deadWall: Tile[]
   players: PlayerState[]
   currentPlayer: PlayerId
   awaitingDiscard: boolean
@@ -214,10 +250,13 @@ export interface GameState {
   lastEvaluation: DiscardEvaluation | null
   discardLogs: DiscardLog[]
   pendingRonTile: Tile | null
+  temporaryFuriten: boolean
+  riichiFuriten: boolean
   reactionEvents: ReactionEvent[]
   pendingReactionEvents: ReactionEvent[]
   callLogs: CallLog[]
   callsDisabled: boolean
+  eventLog: GameEvent[]
 }
 
 const PLAYER_DATA: Array<{ name: string; wind: Wind }> = [
@@ -228,6 +267,26 @@ const PLAYER_DATA: Array<{ name: string; wind: Wind }> = [
 ]
 
 const DEAD_WALL_SIZE = 14
+
+function appendEvent(state: GameState, event: GameEvent): GameState {
+  return { ...state, eventLog: [...state.eventLog, event] }
+}
+
+function finalizeGameState(state: GameState): GameState {
+  const errors = validateGameState(state).filter((violation) => violation.severity === 'error')
+  if (errors.length === 0) return state
+  return {
+    ...state,
+    eventLog: [
+      ...state.eventLog,
+      ...errors.map((error): GameEvent => ({
+        type: 'RULE_ERROR',
+        ruleId: error.ruleId,
+        message: error.message,
+      })),
+    ],
+  }
+}
 const ROUND_WIND: Wind = '東'
 
 const CODE_ORDER = new Map<TileCode, number>(
@@ -602,6 +661,42 @@ export function getWaitTiles(
     if (nextShanten >= baseShanten) return []
     return [{ code, remaining: 4 - visibleCounts[index] }]
   })
+}
+
+function getWinningWaitTileCodes(hand: Array<Tile | TileCode>, meldCount = 0): TileCode[] {
+  if (hand.length % 3 !== 1) return []
+  return TILE_CODES.filter((code) => isWinningHand([...hand, code], meldCount))
+}
+
+export function getFuritenInfo(state: GameState, playerId: PlayerId): FuritenInfo {
+  const player = state.players[playerId]
+  const waitTiles = getWinningWaitTileCodes(player.hand, player.melds.length)
+  const waitSet = new Set(waitTiles)
+  const discardedWaitTiles = [...new Set(
+    player.river
+      .map((record) => record.tile.code)
+      .filter((code) => waitSet.has(code)),
+  )]
+  const discardFuriten = discardedWaitTiles.length > 0
+  const temporaryFuriten = playerId === 0 && state.temporaryFuriten
+  const riichiFuriten = playerId === 0 && state.riichiFuriten
+  const reason = discardFuriten
+    ? 'discard'
+    : riichiFuriten
+      ? 'riichi'
+      : temporaryFuriten
+        ? 'temporary'
+        : null
+
+  return {
+    isFuriten: discardFuriten || temporaryFuriten || riichiFuriten,
+    discardFuriten,
+    temporaryFuriten,
+    riichiFuriten,
+    waitTiles,
+    discardedWaitTiles,
+    reason,
+  }
 }
 
 function hasSequenceCandidate(counts: number[], suitOffset: number, start: number): boolean {
@@ -1378,12 +1473,15 @@ function snapshotState(state: GameState): RollbackSnapshot {
   return {
     players: state.players,
     wall: state.wall,
+    deadWall: state.deadWall,
     currentPlayer: state.currentPlayer,
     phase: state.phase,
     awaitingDiscard: state.awaitingDiscard,
     drawnTileId: state.drawnTileId,
     turnNumber: state.turnNumber,
     lastDiscard: state.lastDiscard,
+    temporaryFuriten: state.temporaryFuriten,
+    riichiFuriten: state.riichiFuriten,
   }
 }
 
@@ -1408,11 +1506,13 @@ function getHumanReactionEvent(state: GameState, record: DiscardRecord): Reactio
 
   const human = state.players[0]
   const meldCount = human.melds.length
-  const canRon = isWinningHand([...human.hand, record.tile], meldCount)
+  const rawCanRon = isWinningHand([...human.hand, record.tile], meldCount)
+  const furitenInfo = rawCanRon ? getFuritenInfo(state, 0) : undefined
+  const canRon = rawCanRon && !furitenInfo?.isFuriten
   const canCallOpen = !state.callsDisabled && !state.playerRiichi && meldCount < 4
   const canPon = canCallOpen && human.hand.filter((tile) => tile.code === record.tile.code).length >= 2
   const canChi = canCallOpen && isKamicha(record.actor, 0) && getChiOptions(human.hand, record.tile).length > 0
-  if (!canRon && !canPon && !canChi) return null
+  if (!rawCanRon && !canPon && !canChi) return null
 
   return {
     id: `reaction-${record.id}`,
@@ -1421,6 +1521,9 @@ function getHumanReactionEvent(state: GameState, record: DiscardRecord): Reactio
     riverDiscardId: record.id,
     turnIndex: state.turnNumber,
     canRon,
+    rawCanRon,
+    ronBlockedReason: rawCanRon && furitenInfo?.isFuriten ? 'furiten' : undefined,
+    furitenInfo,
     canPon,
     canChi,
     snapshot: snapshotState(state),
@@ -1434,9 +1537,10 @@ function nextPhaseAfterDiscard(
   playerRiichi: boolean,
 ): GamePhase {
   const hasRon = pendingReactionEvents.some((event) => event.canRon)
-  if (nextPlayer === 0 && playerRiichi && hasRon) return 'reaction_review'
+  const hasRawRon = pendingReactionEvents.some((event) => event.rawCanRon)
+  if (nextPlayer === 0 && playerRiichi && hasRawRon) return 'reaction_review'
   if (nextPlayer === 0 && playerRiichi) return 'player_draw'
-  if (nextPlayer === 0 && (!callsDisabled || hasRon)) {
+  if (nextPlayer === 0 && (!callsDisabled || hasRon || hasRawRon)) {
     return 'reaction_review'
   }
   if (nextPlayer === 0) return 'player_draw'
@@ -1469,15 +1573,16 @@ export function createInitialGame(random: () => number = Math.random): GameState
     }
   }
 
-  wall.splice(0, DEAD_WALL_SIZE)
+  const deadWall = wall.splice(0, DEAD_WALL_SIZE)
 
-  return {
+  const initialState: GameState = {
     status: 'playing',
     phase: 'player_draw',
     winType: null,
     roundScore: null,
     winningHand: null,
     wall,
+    deadWall,
     players: players.map((player) => ({ ...player, hand: sortTiles(player.hand) })),
     currentPlayer: 0,
     awaitingDiscard: false,
@@ -1491,11 +1596,19 @@ export function createInitialGame(random: () => number = Math.random): GameState
     lastEvaluation: null,
     discardLogs: [],
     pendingRonTile: null,
+    temporaryFuriten: false,
+    riichiFuriten: false,
     reactionEvents: [],
     pendingReactionEvents: [],
     callLogs: [],
     callsDisabled: false,
+    eventLog: [],
   }
+  return finalizeGameState(appendEvent(initialState, {
+    type: 'INIT_GAME',
+    wallCount: wall.length,
+    deadWallCount: deadWall.length,
+  }))
 }
 
 export function beginTurn(state: GameState): GameState {
@@ -1506,24 +1619,42 @@ export function beginTurn(state: GameState): GameState {
     || state.phase === 'reaction_review'
     || state.phase === 'declare_reaction'
   ) return state
-  if (state.wall.length === 0) {
-    return { ...state, status: 'draw', phase: 'draw', winType: null, roundScore: null, winningHand: null, drawnTileId: null, riichiDeclareMode: false }
+  const turnStartState = state.currentPlayer === 0 && state.temporaryFuriten
+    ? appendEvent({ ...state, temporaryFuriten: false }, { type: 'TEMP_FURITEN_CLEAR', player: 0 })
+    : state
+
+  if (turnStartState.wall.length === 0) {
+    return finalizeGameState(appendEvent({
+      ...turnStartState,
+      status: 'draw',
+      phase: 'draw',
+      winType: null,
+      roundScore: null,
+      winningHand: null,
+      drawnTileId: null,
+      riichiDeclareMode: false,
+    }, { type: 'DRAW_GAME' }))
   }
 
-  const wall = [...state.wall]
+  const wall = [...turnStartState.wall]
   const drawnTile = wall.pop()!
-  const players = state.players.map((player, index) =>
-    index === state.currentPlayer ? { ...player, hand: [...player.hand, drawnTile] } : player,
+  const players = turnStartState.players.map((player, index) =>
+    index === turnStartState.currentPlayer ? { ...player, hand: [...player.hand, drawnTile] } : player,
   )
 
-  return {
-    ...state,
+  return finalizeGameState(appendEvent({
+    ...turnStartState,
     wall,
     players,
     awaitingDiscard: true,
     drawnTileId: drawnTile.id,
     phase: 'player_discard',
-  }
+  }, {
+    type: 'DRAW',
+    player: turnStartState.currentPlayer,
+    tile: drawnTile.code,
+    wallRemaining: wall.length,
+  }))
 }
 
 function applyDiscard(state: GameState, tileId: string): GameState {
@@ -1568,7 +1699,7 @@ function applyDiscard(state: GameState, tileId: string): GameState {
     : state.pendingReactionEvents
   const phase = nextPhaseAfterDiscard(nextPlayer, pendingReactionEvents, state.callsDisabled, state.playerRiichi)
 
-  return {
+  const result: GameState = {
     ...baseState,
     phase,
     pendingRonTile: phase === 'reaction_review' && pendingReactionEvents.some((event) => event.canRon)
@@ -1577,6 +1708,39 @@ function applyDiscard(state: GameState, tileId: string): GameState {
     reactionEvents: reactionEvent ? [...state.reactionEvents, reactionEvent] : state.reactionEvents,
     pendingReactionEvents,
   }
+  const events: GameEvent[] = [
+    { type: 'DISCARD', player: asPlayerId(playerIndex), tile: discarded.code },
+  ]
+  if (phase === 'reaction_review') {
+    events.push({
+      type: 'REACTION_REVIEW',
+      tile: discarded.code,
+      canRon: reactionEvent?.canRon ?? false,
+      canPon: reactionEvent?.canPon ?? false,
+      canChi: reactionEvent?.canChi ?? false,
+    })
+  }
+  if (reactionEvent?.rawCanRon && reactionEvent.furitenInfo) {
+    events.push({
+      type: 'FURITEN_CHECK',
+      player: 0,
+      isFuriten: reactionEvent.furitenInfo.isFuriten,
+      reason: reactionEvent.furitenInfo.reason,
+      waitTiles: reactionEvent.furitenInfo.waitTiles,
+    })
+    if (reactionEvent.ronBlockedReason === 'furiten') {
+      events.push({
+        type: 'RON_BLOCKED_BY_FURITEN',
+        player: 0,
+        tile: discarded.code,
+        reason: reactionEvent.furitenInfo.reason ?? 'furiten',
+      })
+    }
+  }
+  return finalizeGameState({
+    ...result,
+    eventLog: [...result.eventLog, ...events],
+  })
 }
 
 export function discardTile(state: GameState, tileId: string): GameState {
@@ -1599,24 +1763,24 @@ export function setCallsDisabled(state: GameState, enabled: boolean): GameState 
   if (state.status !== 'playing') return { ...state, callsDisabled: enabled }
   if (!enabled) return { ...state, callsDisabled: false }
 
-  const ronEvents = state.pendingReactionEvents.filter((event) => event.canRon)
+  const ronEvents = state.pendingReactionEvents.filter((event) => event.canRon || event.rawCanRon)
   if (state.phase === 'reaction_review' && ronEvents.length === 0) {
-    return {
+    return finalizeGameState({
       ...state,
       callsDisabled: true,
       phase: 'player_draw',
       pendingReactionEvents: [],
       pendingRonTile: null,
       lastFeedback: null,
-    }
+    })
   }
 
-  return {
+  return finalizeGameState({
     ...state,
     callsDisabled: true,
     pendingReactionEvents: ronEvents,
-    pendingRonTile: ronEvents[0]?.tile ?? null,
-  }
+    pendingRonTile: ronEvents.find((event) => event.canRon)?.tile ?? null,
+  })
 }
 
 function appendHumanLog(
@@ -1680,7 +1844,7 @@ export function discardHumanTile(state: GameState, tileId: string): GameState {
     : state.riichiWaitTiles
   const discardedState = applyDiscard(state, tileId)
   const withLog = appendHumanLog(state, discardedState, { ...selected, discard: discarded }, evaluation, declaredRiichi)
-  return {
+  const result: GameState = {
     ...withLog,
     playerRiichi: state.playerRiichi || declaredRiichi,
     players: withLog.players.map((player, index) => index === 0
@@ -1694,6 +1858,9 @@ export function discardHumanTile(state: GameState, tileId: string): GameState {
         ? '今の打牌、リーチできたよ'
         : null,
   }
+  return declaredRiichi
+    ? finalizeGameState(appendEvent(result, { type: 'DECLARE_RIICHI', player: 0 }))
+    : finalizeGameState(result)
 }
 
 export function autoDiscardRiichiDraw(state: GameState): GameState {
@@ -1711,25 +1878,40 @@ export function autoDiscardRiichiDraw(state: GameState): GameState {
   const analysis = analyzeDiscardOptions(hand14, getVisibleTiles(state), state.players[0].melds.length)
   const selected = analysis.find((option) => option.discard.code === discarded.code)!
   const evaluation = buildDiscardEvaluation(discarded, analysis, hand14, { playerAlreadyRiichi: true })
-  return appendHumanLog(state, applyDiscard(state, discarded.id), { ...selected, discard: discarded }, evaluation, false)
+  return finalizeGameState(appendHumanLog(state, applyDiscard(state, discarded.id), { ...selected, discard: discarded }, evaluation, false))
 }
 
 export function startReactionDeclaration(state: GameState): GameState {
   if (state.status !== 'playing' || state.phase !== 'reaction_review') {
     return state
   }
-  return { ...state, phase: 'declare_reaction', lastFeedback: null }
+  return finalizeGameState({ ...state, phase: 'declare_reaction', lastFeedback: null })
 }
 
 export function skipReactionReview(state: GameState): GameState {
   if (state.status !== 'playing' || !['reaction_review', 'declare_reaction'].includes(state.phase)) return state
-  return {
+  const skippedRonEvents = state.pendingReactionEvents.filter((event) => event.rawCanRon && event.canRon)
+  const startsRiichiFuriten = skippedRonEvents.length > 0 && state.playerRiichi
+  const startsTemporaryFuriten = skippedRonEvents.length > 0 && !state.playerRiichi
+  const furitenEvents: GameEvent[] = [
+    ...skippedRonEvents.map((event): GameEvent => ({ type: 'SKIP_RON', player: 0, tile: event.tile.code })),
+  ]
+  if (startsRiichiFuriten && !state.riichiFuriten) {
+    furitenEvents.push({ type: 'RIICHI_FURITEN_START', player: 0 })
+  }
+  if (startsTemporaryFuriten && !state.temporaryFuriten) {
+    furitenEvents.push({ type: 'TEMP_FURITEN_START', player: 0 })
+  }
+  return finalizeGameState({
     ...state,
     phase: 'player_draw',
     pendingReactionEvents: [],
     pendingRonTile: null,
+    temporaryFuriten: state.temporaryFuriten || startsTemporaryFuriten,
+    riichiFuriten: state.riichiFuriten || startsRiichiFuriten,
+    eventLog: [...state.eventLog, ...furitenEvents],
     lastFeedback: null,
-  }
+  })
 }
 
 function findReactionEvent(state: GameState, eventId?: string): ReactionEvent | null {
@@ -1743,16 +1925,19 @@ function restoreReactionSnapshot(state: GameState, event: ReactionEvent): GameSt
     ...state,
     players: event.snapshot.players,
     wall: event.snapshot.wall,
+    deadWall: event.snapshot.deadWall,
     currentPlayer: event.snapshot.currentPlayer,
     awaitingDiscard: event.snapshot.awaitingDiscard,
     drawnTileId: event.snapshot.drawnTileId,
     turnNumber: event.snapshot.turnNumber,
     lastDiscard: event.snapshot.lastDiscard,
+    temporaryFuriten: event.snapshot.temporaryFuriten,
+    riichiFuriten: event.snapshot.riichiFuriten,
   }
 }
 
 function failedCall(state: GameState, type: 'ron' | 'pon' | 'chi', event: ReactionEvent | null, reason: string): GameState {
-  return {
+  return finalizeGameState({
     ...state,
     phase: 'reaction_review',
     lastFeedback: reason,
@@ -1764,9 +1949,9 @@ function failedCall(state: GameState, type: 'ron' | 'pon' | 'chi', event: Reacti
           targetPlayer: event.actor,
           success: false,
           reason,
-        }]
+      }]
       : state.callLogs,
-  }
+  })
 }
 
 export function declareReaction(
@@ -1783,8 +1968,20 @@ export function declareReaction(
   if (type === 'ron') {
     const restored = restoreReactionSnapshot(state, event)
     const winningHand = [...restored.players[0].hand, event.tile]
-    if (!event.canRon || !isWinningHand(winningHand, restored.players[0].melds.length)) {
+    if (!event.rawCanRon || !isWinningHand(winningHand, restored.players[0].melds.length)) {
       return failedCall(state, type, event, 'その牌ではロンできません')
+    }
+    const furitenInfo = getFuritenInfo(restored, 0)
+    if (furitenInfo.isFuriten || !event.canRon) {
+      return finalizeGameState(appendEvent(
+        failedCall(state, type, event, 'フリテンのためロンできません'),
+        {
+          type: 'RON_BLOCKED_BY_FURITEN',
+          player: 0,
+          tile: event.tile.code,
+          reason: furitenInfo.reason ?? event.furitenInfo?.reason ?? 'furiten',
+        },
+      ))
     }
     const roundScore = calculateWinningScore(winningHand, 'ron', {
       riichi: restored.playerRiichi,
@@ -1802,6 +1999,11 @@ export function declareReaction(
       pendingRonTile: null,
       pendingReactionEvents: [],
       players: markDiscardCalled(restored.players, event, 'ron'),
+      eventLog: [
+        ...restored.eventLog,
+        { type: 'DECLARE_CALL', call: 'ron', player: 0, tile: event.tile.code },
+        { type: 'WIN', winType: 'ron', player: 0 },
+      ],
       lastFeedback: 'ロン成立！',
       callLogs: [...state.callLogs, {
         turnIndex: event.turnIndex,
@@ -1846,6 +2048,10 @@ export function declareReaction(
       pendingReactionEvents: [],
       riichiDeclareMode: false,
       lastEvaluation: null,
+      eventLog: [
+        ...restored.eventLog,
+        { type: 'DECLARE_CALL', call: 'pon', player: 0, tile: event.tile.code },
+      ],
       lastFeedback: 'ポン成立！',
       callLogs: [...state.callLogs, {
         turnIndex: event.turnIndex,
@@ -1889,6 +2095,10 @@ export function declareReaction(
     pendingReactionEvents: [],
     riichiDeclareMode: false,
     lastEvaluation: null,
+    eventLog: [
+      ...restored.eventLog,
+      { type: 'DECLARE_CALL', call: 'chi', player: 0, tile: event.tile.code },
+    ],
     lastFeedback: 'チー成立！',
     callLogs: [...state.callLogs, {
       turnIndex: event.turnIndex,
@@ -1933,7 +2143,7 @@ export function declareWin(state: GameState, type: 'tsumo' | 'ron'): GameState {
     playerWind: state.players[0].wind,
     roundWind: ROUND_WIND,
   })
-  return {
+  const result: GameState = {
     ...state,
     status: 'win',
     phase: 'win',
@@ -1945,6 +2155,7 @@ export function declareWin(state: GameState, type: 'tsumo' | 'ron'): GameState {
     pendingRonTile: null,
     lastFeedback: type === 'tsumo' ? 'ツモ！' : 'ロン！',
   }
+  return finalizeGameState(appendEvent(result, { type: 'WIN', winType: type, player: 0 }))
 }
 
 function tileUtility(tile: Tile, hand: Tile[]): number {
