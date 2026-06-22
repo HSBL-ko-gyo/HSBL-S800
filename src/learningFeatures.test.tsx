@@ -390,6 +390,7 @@ describe('reaction declaration MVP', () => {
     const review = discardTile(beforeDraw, beforeDraw.players[3].hand[0].id)
     expect(review.pendingReactionEvents).toHaveLength(1)
     expect(review.phase).toBe('reaction_review')
+    expect(renderTable(review)).toContain('鳴き無しをONにすると')
     expect(skipReactionReview(review).phase).toBe('player_draw')
   })
 
@@ -441,6 +442,7 @@ describe('reaction declaration MVP', () => {
     expect(ronHtml).toContain('ロンする？')
     expect(ronHtml).toContain('>見送る</button>')
     expect(ronHtml).not.toContain('>ツモる</button>')
+    expect(ronHtml).not.toContain('鳴き無しをONにすると')
   })
 
   it('leaves declare reaction when disabling calls removes every declaration option', () => {

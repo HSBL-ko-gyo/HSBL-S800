@@ -483,6 +483,13 @@ h1 {
   font-weight: 800;
 }
 
+.reaction-help {
+  margin: 3px 0 0;
+  color: rgba(247, 242, 228, .58);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .reaction-actions {
   display: flex;
   flex-wrap: wrap;

@@ -219,6 +219,7 @@ export function TableView({
   const reactionReviewQuestion = isRonOnlyReaction ? 'ロンする？' : '宣言する？'
   const reactionReviewActionLabel = isRonOnlyReaction ? 'ロン確認' : '宣言する'
   const reactionReviewSkipLabel = isRonOnlyReaction ? '見送る' : 'ツモる'
+  const reactionReviewHelp = isRonOnlyReaction ? null : '鳴き無しをONにすると、この確認を自動で飛ばせます。'
   const isReactionDialogOpen = game.phase === 'reaction_review' || game.phase === 'declare_reaction'
   const statusText = game.status === 'draw'
     ? '流局'
@@ -307,6 +308,7 @@ export function TableView({
               <div>
                 <span className="reaction-kicker">{reactionReviewLabel}</span>
                 <strong>{reactionReviewQuestion}</strong>
+                {reactionReviewHelp && <p className="reaction-help">{reactionReviewHelp}</p>}
               </div>
               <div className="reaction-actions">
                 <button className="reaction-secondary" type="button" onClick={onStartReaction}>{reactionReviewActionLabel}</button>
