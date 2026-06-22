@@ -171,6 +171,7 @@ interface HandViewProps {
   riichiDeclareMode: boolean
   callsDisabled: boolean
   blockGuidesHidden: boolean
+  blockGuidesEnabled: boolean
   hint: string
   onDiscard: (tile: Tile) => void
   onRon: () => void
@@ -191,6 +192,7 @@ export function HandView({
   riichiDeclareMode,
   callsDisabled,
   blockGuidesHidden,
+  blockGuidesEnabled,
   hint,
   onDiscard,
   onRon,
@@ -224,6 +226,7 @@ export function HandView({
   const handBlockSegments = buildHandBlockSegments(handBlocks, displayed)
   const blockSummary = handBlocks.map((block) => block.label).join('、')
   const blockTactic = getBlockTactic(handBlocks)
+  const showBlockGuides = blockGuidesEnabled && !blockGuidesHidden
   const isMobileLayout = useMediaQuery(TOUCH_LAYOUT_QUERY)
 
   const syncOverviewWindow = () => {
@@ -497,30 +500,30 @@ export function HandView({
           </span>
         ))}
       </div>
-      <div
-        className={`mobile-block-guide ${blockGuidesHidden ? 'block-guide-hidden' : ''}`}
-        aria-hidden={blockGuidesHidden}
-        aria-label={blockGuidesHidden ? undefined : `ブロック補助: ${blockSummary}`}
-        style={{ '--block-tile-count': displayed.length } as CSSProperties}
-      >
-        {handBlockSegments.map((block) => (
-          <span
-            className={`block-guide-item block-guide-item-${block.kind}`}
-            key={block.key}
-            style={{ gridColumn: `${block.start + 1} / span ${block.length}` }}
+      {showBlockGuides && (
+        <>
+          <div
+            className="mobile-block-guide"
+            aria-label={`ブロック補助: ${blockSummary}`}
+            style={{ '--block-tile-count': displayed.length } as CSSProperties}
           >
-            {block.label}
-          </span>
-        ))}
-      </div>
-      <div
-        className={`mobile-block-count-guide block-count-guide block-count-${blockTactic.tone} ${blockGuidesHidden ? 'block-guide-hidden' : ''}`}
-        aria-hidden={blockGuidesHidden}
-      >
-        <b>5ブロック打法</b>
-        <span><strong>{blockTactic.countLabel}</strong><em>{blockTactic.statusLabel}</em></span>
-        <small>{blockTactic.detail}</small>
-      </div>
+            {handBlockSegments.map((block) => (
+              <span
+                className={`block-guide-item block-guide-item-${block.kind}`}
+                key={block.key}
+                style={{ gridColumn: `${block.start + 1} / span ${block.length}` }}
+              >
+                {block.label}
+              </span>
+            ))}
+          </div>
+          <div className={`mobile-block-count-guide block-count-guide block-count-${blockTactic.tone}`}>
+            <b>5ブロック打法</b>
+            <span><strong>{blockTactic.countLabel}</strong><em>{blockTactic.statusLabel}</em></span>
+            <small>{blockTactic.detail}</small>
+          </div>
+        </>
+      )}
       <div className="mobile-hand-control">
         <span className="discard-threshold-guide" aria-hidden="true">
           <span className="discard-gradient-zone" />
@@ -568,30 +571,30 @@ export function HandView({
           </span>
         ))}
       </div>
-      <div
-        className={`desktop-block-guide ${blockGuidesHidden ? 'block-guide-hidden' : ''}`}
-        aria-hidden={blockGuidesHidden}
-        aria-label={blockGuidesHidden ? undefined : `ブロック補助: ${blockSummary}`}
-        style={{ '--block-tile-count': displayed.length } as CSSProperties}
-      >
-        {handBlockSegments.map((block) => (
-          <span
-            className={`block-guide-item block-guide-item-${block.kind}`}
-            key={`desktop-${block.key}`}
-            style={{ gridColumn: `${block.start + 1} / span ${block.length}` }}
+      {showBlockGuides && (
+        <>
+          <div
+            className="desktop-block-guide"
+            aria-label={`ブロック補助: ${blockSummary}`}
+            style={{ '--block-tile-count': displayed.length } as CSSProperties}
           >
-            {block.label}
-          </span>
-        ))}
-      </div>
-      <div
-        className={`desktop-block-count-guide block-count-guide block-count-${blockTactic.tone} ${blockGuidesHidden ? 'block-guide-hidden' : ''}`}
-        aria-hidden={blockGuidesHidden}
-      >
-        <b>5ブロック打法</b>
-        <span><strong>{blockTactic.countLabel}</strong><em>{blockTactic.statusLabel}</em></span>
-        <small>{blockTactic.detail}</small>
-      </div>
+            {handBlockSegments.map((block) => (
+              <span
+                className={`block-guide-item block-guide-item-${block.kind}`}
+                key={`desktop-${block.key}`}
+                style={{ gridColumn: `${block.start + 1} / span ${block.length}` }}
+              >
+                {block.label}
+              </span>
+            ))}
+          </div>
+          <div className={`desktop-block-count-guide block-count-guide block-count-${blockTactic.tone}`}>
+            <b>5ブロック打法</b>
+            <span><strong>{blockTactic.countLabel}</strong><em>{blockTactic.statusLabel}</em></span>
+            <small>{blockTactic.detail}</small>
+          </div>
+        </>
+      )}
       <span className="hand-scroll-hint">
         {selectedTileId
           ? '下段を横スライドで選択・上スワイプ または ダブルタップで打牌'

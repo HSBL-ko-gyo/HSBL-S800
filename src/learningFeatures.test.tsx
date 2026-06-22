@@ -447,8 +447,9 @@ describe('reaction declaration MVP', () => {
 
     const html = renderTable(called)
     expect(html).toContain('called-tile from-left')
-    expect(html).toContain('--block-tile-count:11')
-    expect(html).toMatch(/class="mobile-block-guide[^"]*"[^>]*style="--block-tile-count:11"/)
+    expect(html).not.toContain('mobile-block-guide')
+    expect(html).not.toContain('desktop-block-guide')
+    expect(html).not.toContain('block-count-guide')
   })
 
   it('declares chi only from kamicha and keeps riichi unavailable after calling', () => {
@@ -471,6 +472,11 @@ describe('reaction declaration MVP', () => {
     expect(called.players[3].river[0].callType).toBe('chi')
     expect(called.lastEvaluation).toBeNull()
     expect(setRiichiDeclareMode(called, true).riichiDeclareMode).toBe(false)
+
+    const html = renderTable(called)
+    expect(html).not.toContain('mobile-block-guide')
+    expect(html).not.toContain('desktop-block-guide')
+    expect(html).not.toContain('block-count-guide')
 
     const notKamicha = stateBeforeEnemyDiscard(
       ['3m', '4m', '1p', '2p', '4p', '6p', '8p', '1s', '3s', '5s', 'E', 'S', 'W'],
