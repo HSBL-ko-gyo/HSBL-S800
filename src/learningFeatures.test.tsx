@@ -24,6 +24,7 @@ import {
   isTenpai,
   skipReactionReview,
   startReactionDeclaration,
+  setCallsDisabled,
   setRiichiDeclareMode,
   type GameState,
   type PlayerId,
@@ -440,6 +441,37 @@ describe('reaction declaration MVP', () => {
     expect(ronHtml).toContain('ロンする？')
     expect(ronHtml).toContain('>見送る</button>')
     expect(ronHtml).not.toContain('>ツモる</button>')
+  })
+
+  it('leaves declare reaction when disabling calls removes every declaration option', () => {
+    const beforeDraw = stateBeforeEnemyDiscard(
+      ['5m', '5m', '1p', '2p', '3p', '4p', '6p', '8p', '1s', '3s', '5s', 'E', 'S'],
+      '5m',
+    )
+    const review = discardTile(beforeDraw, beforeDraw.players[3].hand[0].id)
+    const declaring = startReactionDeclaration(review)
+    expect(declaring.phase).toBe('declare_reaction')
+    expect(declaring.pendingReactionEvents[0].canPon).toBe(true)
+
+    const disabled = setCallsDisabled(declaring, true)
+    expect(disabled.callsDisabled).toBe(true)
+    expect(disabled.phase).toBe('player_draw')
+    expect(disabled.pendingReactionEvents).toHaveLength(0)
+    expect(renderTable(disabled)).not.toContain('螳｣險縺ｧ縺阪ｋ謐ｨ縺ｦ迚後・縺ゅｊ縺ｾ縺帙ｓ')
+  })
+
+  it('keeps declare reaction open when disabling calls leaves a ron option', () => {
+    const beforeDraw = stateBeforeEnemyDiscard(tenpaiBase, '5m')
+    const review = discardTile(beforeDraw, beforeDraw.players[3].hand[0].id)
+    const declaring = startReactionDeclaration(review)
+    expect(declaring.phase).toBe('declare_reaction')
+    expect(declaring.pendingReactionEvents[0].canRon).toBe(true)
+
+    const disabled = setCallsDisabled(declaring, true)
+    expect(disabled.callsDisabled).toBe(true)
+    expect(disabled.phase).toBe('declare_reaction')
+    expect(disabled.pendingReactionEvents).toHaveLength(1)
+    expect(disabled.pendingReactionEvents[0].canRon || disabled.pendingReactionEvents[0].rawCanRon).toBe(true)
   })
 
   it('does not show the pre-draw confirmation after riichi unless ron is available', () => {

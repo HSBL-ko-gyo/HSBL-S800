@@ -1764,7 +1764,7 @@ export function setCallsDisabled(state: GameState, enabled: boolean): GameState 
   if (!enabled) return { ...state, callsDisabled: false }
 
   const ronEvents = state.pendingReactionEvents.filter((event) => event.canRon || event.rawCanRon)
-  if (state.phase === 'reaction_review' && ronEvents.length === 0) {
+  if (['reaction_review', 'declare_reaction'].includes(state.phase) && ronEvents.length === 0) {
     return finalizeGameState({
       ...state,
       callsDisabled: true,
