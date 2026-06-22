@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
+import { HandView } from './components/HandView'
 import { TableView } from './components/TableView'
 import { TileView } from './components/TileView'
 import { YakuInfoPanel } from './components/YakuInfoPanel'
@@ -250,16 +251,48 @@ describe('riichi learning flow', () => {
     expect(html).toContain('5ブロック打法')
     expect(html).toContain('ブロック</strong><em>不足')
     expect(html).not.toContain('5ブロック打法</b><span>3ブロック不足')
-    expect(html).toContain('mobile-block-guide')
+    expect(html).not.toContain('mobile-block-guide')
+    expect(html).toContain('mobile-tile-block-label')
     expect(html).toContain('desktop-block-guide')
     expect(html).toContain('desktop-call-toggle')
     expect(html).not.toContain('mobile-call-toggle')
     expect(html).toContain('metric-privacy-toggle')
     expect(html).toContain('aria-pressed="false"')
     expect(html).toMatch(/block-guide-item-(meld|pair|ryanmen|kanchan|penchan|floating)/)
+    expect(html).toMatch(/mobile-tile-block-label-(meld|pair|ryanmen|kanchan|penchan|floating)/)
     expect(overviewHtml.match(/mobile-overview-slot/g)).toHaveLength(14)
     expect(overviewHtml).not.toContain('<button')
     expect(railHtml.match(/hand-tile-slot/g)).toHaveLength(14)
+    expect(railHtml.match(/class="mobile-tile-block-label /g)).toHaveLength(14)
+  })
+
+  it('hides mobile slot block labels when block guides are hidden', () => {
+    const state = gameWithHand([...tenpaiBase, 'E'])
+    const html = renderToStaticMarkup(
+      <HandView
+        tiles={state.players[0].hand}
+        drawnTileId={state.drawnTileId}
+        canDiscard
+        canRon={false}
+        canTsumo={false}
+        showRiichiButton={false}
+        riichiButtonEnabled={false}
+        playerRiichi={false}
+        riichiDeclareMode={false}
+        callsDisabled={false}
+        openMeldCount={0}
+        blockGuidesHidden
+        hint=""
+        onDiscard={() => undefined}
+        onRon={() => undefined}
+        onTsumo={() => undefined}
+        onRiichiMode={() => undefined}
+        onCallsDisabledMode={() => undefined}
+      />,
+    )
+
+    expect(html).not.toContain('mobile-tile-block-label')
+    expect(html).toContain('block-guide-hidden')
   })
 
   it('shows unobtrusive affiliate links in the round result dialog', () => {
@@ -446,11 +479,17 @@ describe('reaction declaration MVP', () => {
     expect(getVisibleTiles(called).filter((tile) => tile.code === '5m')).toHaveLength(3)
 
     const html = renderTable(called)
+    const railStart = html.indexOf('<div class="hand mobile-hand-rail')
+    const desktopStart = html.indexOf('<div class="hand desktop-hand', railStart)
+    const railHtml = html.slice(railStart, desktopStart)
+
     expect(html).toContain('called-tile from-left')
-    expect(html).toContain('--block-tile-count:11')
-    expect(html).toMatch(/class="mobile-block-guide[^"]*"[^>]*style="--block-tile-count:11"/)
-    expect(html).toContain('block-guide-item-floating')
+    expect(html).not.toContain('mobile-block-guide')
+    expect(railHtml.match(/hand-tile-slot/g)).toHaveLength(11)
+    expect(railHtml.match(/class="mobile-tile-block-label /g)).toHaveLength(11)
+    expect(railHtml).toContain('mobile-tile-block-label-floating')
     expect(html).toContain('mobile-block-count-guide')
+    expect(html).toContain('残り手牌の形')
   })
 
   it('declares chi only from kamicha and keeps riichi unavailable after calling', () => {
@@ -473,6 +512,16 @@ describe('reaction declaration MVP', () => {
     expect(called.players[3].river[0].callType).toBe('chi')
     expect(called.lastEvaluation).toBeNull()
     expect(setRiichiDeclareMode(called, true).riichiDeclareMode).toBe(false)
+
+    const html = renderTable(called)
+    const railStart = html.indexOf('<div class="hand mobile-hand-rail')
+    const desktopStart = html.indexOf('<div class="hand desktop-hand', railStart)
+    const railHtml = html.slice(railStart, desktopStart)
+    expect(html).not.toContain('mobile-block-guide')
+    expect(railHtml.match(/hand-tile-slot/g)).toHaveLength(11)
+    expect(railHtml.match(/class="mobile-tile-block-label /g)).toHaveLength(11)
+    expect(railHtml).toContain('mobile-tile-block-label-floating')
+    expect(html).toContain('残り手牌の形')
 
     const notKamicha = stateBeforeEnemyDiscard(
       ['3m', '4m', '1p', '2p', '4p', '6p', '8p', '1s', '3s', '5s', 'E', 'S', 'W'],

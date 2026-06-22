@@ -2381,11 +2381,51 @@ h1 {
   }
   .mobile-hand-rail .hand-tile-slot {
     display: flex;
+    position: relative;
     width: var(--rail-tile-width);
     flex: 0 0 var(--rail-tile-width);
     align-self: flex-end;
     justify-content: center;
   }
+  .mobile-tile-block-label {
+    display: inline-flex;
+    position: absolute;
+    z-index: 12;
+    left: 50%;
+    bottom: 11px;
+    min-width: 18px;
+    max-width: calc(var(--rail-tile-width) - 8px);
+    height: 15px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    background: rgba(9, 42, 31, .78);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .24);
+    color: rgba(247, 242, 228, .72);
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 1;
+    overflow: hidden;
+    pointer-events: none;
+    text-overflow: clip;
+    transform: translateX(-50%);
+    transition: transform .04s linear, opacity .12s;
+    white-space: nowrap;
+  }
+  .hand-tile-slot.is-selected .mobile-tile-block-label {
+    transform: translateX(-50%) translateY(calc((var(--selected-rest-lift) + var(--selected-lift, 0px)) * -1));
+  }
+  .mobile-tile-block-label-meld { color: rgba(232, 200, 121, .92); background: rgba(81, 58, 22, .78); }
+  .mobile-tile-block-label-pair { color: rgba(140, 227, 170, .94); background: rgba(17, 68, 42, .78); }
+  .mobile-tile-block-label-ryanmen { color: rgba(134, 203, 255, .94); background: rgba(15, 57, 84, .78); }
+  .mobile-tile-block-label-kanchan,
+  .mobile-tile-block-label-penchan { color: rgba(240, 182, 107, .96); background: rgba(84, 52, 19, .78); }
+  .mobile-tile-block-label-floating { color: rgba(247, 242, 228, .68); background: rgba(38, 48, 43, .74); }
+  .mobile-tile-block-label.block-group-start { border-radius: 999px 5px 5px 999px; }
+  .mobile-tile-block-label.block-group-middle { border-radius: 5px; opacity: .82; }
+  .mobile-tile-block-label.block-group-end { border-radius: 5px 999px 999px 5px; }
   .mobile-hand-rail .tile.hand {
     --tile-width: var(--rail-tile-width);
     z-index: 1;

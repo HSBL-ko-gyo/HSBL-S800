@@ -25,6 +25,13 @@ interface HandBlockSegment {
   length: number
 }
 
+interface HandBlockSlotLabel {
+  groupId: string
+  kind: BlockKind
+  label: string
+  groupPosition: 'single' | 'start' | 'middle' | 'end'
+}
+
 interface BlockTactic {
   tone: 'shortage' | 'ready' | 'overflow'
   countLabel: string
@@ -133,6 +140,36 @@ function buildHandBlockSegments(blocks: HandBlock[], tiles: Tile[]): HandBlockSe
   }).sort((a, b) => a.start - b.start)
 }
 
+function buildHandBlockSlotLabels(blocks: HandBlock[], tiles: Tile[]): Map<string, HandBlockSlotLabel> {
+  const indexById = new Map(tiles.map((tile, index) => [tile.id, index]))
+  const labels = new Map<string, HandBlockSlotLabel>()
+
+  blocks.forEach((block, blockIndex) => {
+    const orderedIds = block.tileIds
+      .map((id) => ({ id, index: indexById.get(id) }))
+      .filter((item): item is { id: string; index: number } => item.index !== undefined)
+      .sort((a, b) => a.index - b.index)
+      .map((item) => item.id)
+
+    orderedIds.forEach((id, index) => {
+      labels.set(id, {
+        groupId: `block-${blockIndex}`,
+        kind: block.kind,
+        label: block.shortLabel,
+        groupPosition: orderedIds.length === 1
+          ? 'single'
+          : index === 0
+            ? 'start'
+            : index === orderedIds.length - 1
+              ? 'end'
+              : 'middle',
+      })
+    })
+  })
+
+  return labels
+}
+
 function getBlockTactic(blocks: HandBlock[]): BlockTactic {
   const count = blocks.filter((block) => block.kind !== 'floating').length
   if (count >= 6) {
@@ -170,6 +207,7 @@ interface HandViewProps {
   playerRiichi: boolean
   riichiDeclareMode: boolean
   callsDisabled: boolean
+  openMeldCount: number
   blockGuidesHidden: boolean
   hint: string
   onDiscard: (tile: Tile) => void
@@ -190,6 +228,7 @@ export function HandView({
   playerRiichi,
   riichiDeclareMode,
   callsDisabled,
+  openMeldCount,
   blockGuidesHidden,
   hint,
   onDiscard,
@@ -222,8 +261,11 @@ export function HandView({
   const displayed = drawnTile ? [...concealed, drawnTile] : concealed
   const handBlocks = buildHandBlocks(displayed)
   const handBlockSegments = buildHandBlockSegments(handBlocks, displayed)
+  const handBlockSlotLabels = buildHandBlockSlotLabels(handBlocks, displayed)
   const blockSummary = handBlocks.map((block) => block.label).join('、')
   const blockTactic = getBlockTactic(handBlocks)
+  const blockCountTitle = openMeldCount > 0 ? '残り手牌の形' : '5ブロック打法'
+  const blockCountDetail = openMeldCount > 0 ? '副露済み面子を除いた残り手牌を見ています' : blockTactic.detail
   const isMobileLayout = useMediaQuery(TOUCH_LAYOUT_QUERY)
 
   const syncOverviewWindow = () => {
@@ -498,28 +540,12 @@ export function HandView({
         ))}
       </div>
       <div
-        className={`mobile-block-guide ${blockGuidesHidden ? 'block-guide-hidden' : ''}`}
-        aria-hidden={blockGuidesHidden}
-        aria-label={blockGuidesHidden ? undefined : `ブロック補助: ${blockSummary}`}
-        style={{ '--block-tile-count': displayed.length } as CSSProperties}
-      >
-        {handBlockSegments.map((block) => (
-          <span
-            className={`block-guide-item block-guide-item-${block.kind}`}
-            key={block.key}
-            style={{ gridColumn: `${block.start + 1} / span ${block.length}` }}
-          >
-            {block.label}
-          </span>
-        ))}
-      </div>
-      <div
         className={`mobile-block-count-guide block-count-guide block-count-${blockTactic.tone} ${blockGuidesHidden ? 'block-guide-hidden' : ''}`}
         aria-hidden={blockGuidesHidden}
       >
-        <b>5ブロック打法</b>
+        <b>{blockCountTitle}</b>
         <span><strong>{blockTactic.countLabel}</strong><em>{blockTactic.statusLabel}</em></span>
-        <small>{blockTactic.detail}</small>
+        <small>{blockCountDetail}</small>
       </div>
       <div className="mobile-hand-control">
         <span className="discard-threshold-guide" aria-hidden="true">
@@ -535,21 +561,42 @@ export function HandView({
           onScroll={syncOverviewWindow}
         >
           <div className="mobile-hand-track">
-            {displayed.map((tile) => (
-              <span className="hand-tile-slot" data-hand-tile-id={tile.id} key={tile.id}>
-                <TileView
-                  tile={tile}
-                  usage="hand"
-                  className={[
-                    tile.id === drawnTileId ? 'drawn' : '',
-                    tile.id === selectedTileId ? 'selected' : '',
-                  ].filter(Boolean).join(' ')}
-                  visualState={canDiscard ? undefined : 'static'}
-                  disabled={!canDiscard}
-                  onClick={canDiscard ? handleTileClick : undefined}
-                />
-              </span>
-            ))}
+            {displayed.map((tile) => {
+              const blockLabel = handBlockSlotLabels.get(tile.id)
+              const isSelected = tile.id === selectedTileId
+              return (
+                <span
+                  className={['hand-tile-slot', isSelected ? 'is-selected' : ''].filter(Boolean).join(' ')}
+                  data-hand-tile-id={tile.id}
+                  key={tile.id}
+                >
+                  <TileView
+                    tile={tile}
+                    usage="hand"
+                    className={[
+                      tile.id === drawnTileId ? 'drawn' : '',
+                      isSelected ? 'selected' : '',
+                    ].filter(Boolean).join(' ')}
+                    visualState={canDiscard ? undefined : 'static'}
+                    disabled={!canDiscard}
+                    onClick={canDiscard ? handleTileClick : undefined}
+                  />
+                  {!blockGuidesHidden && blockLabel && (
+                    <span
+                      className={[
+                        'mobile-tile-block-label',
+                        `mobile-tile-block-label-${blockLabel.kind}`,
+                        `block-group-${blockLabel.groupPosition}`,
+                      ].join(' ')}
+                      data-block-group={blockLabel.groupId}
+                      aria-hidden="true"
+                    >
+                      {blockLabel.label}
+                    </span>
+                  )}
+                </span>
+              )
+            })}
           </div>
         </div>
       </div>
