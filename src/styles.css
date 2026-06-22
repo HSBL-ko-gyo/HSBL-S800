@@ -2266,6 +2266,7 @@ h1 {
   }
   .mobile-overview-slot {
     display: flex;
+    position: relative;
     width: var(--overview-tile-width);
     flex: 0 0 var(--overview-tile-width);
     justify-content: center;
@@ -2390,21 +2391,21 @@ h1 {
   .mobile-tile-block-label {
     display: inline-flex;
     position: absolute;
-    z-index: 12;
+    z-index: 4;
     left: 50%;
-    bottom: 11px;
-    min-width: 18px;
-    max-width: calc(var(--rail-tile-width) - 8px);
-    height: 15px;
+    bottom: 1px;
+    min-width: 13px;
+    max-width: calc(var(--overview-tile-width) - 2px);
+    height: 11px;
     align-items: center;
     justify-content: center;
-    padding: 0 4px;
+    padding: 0 2px;
     border: 1px solid currentColor;
     border-radius: 999px;
     background: rgba(9, 42, 31, .78);
     box-shadow: 0 1px 4px rgba(0, 0, 0, .24);
     color: rgba(247, 242, 228, .72);
-    font-size: 9px;
+    font-size: 7px;
     font-weight: 800;
     line-height: 1;
     overflow: hidden;
@@ -2413,9 +2414,6 @@ h1 {
     transform: translateX(-50%);
     transition: transform .04s linear, opacity .12s;
     white-space: nowrap;
-  }
-  .hand-tile-slot.is-selected .mobile-tile-block-label {
-    transform: translateX(-50%) translateY(calc((var(--selected-rest-lift) + var(--selected-lift, 0px)) * -1));
   }
   .mobile-tile-block-label-meld { color: rgba(232, 200, 121, .92); background: rgba(81, 58, 22, .78); }
   .mobile-tile-block-label-pair { color: rgba(140, 227, 170, .94); background: rgba(17, 68, 42, .78); }

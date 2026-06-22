@@ -529,15 +529,31 @@ export function HandView({
             width: `${overviewWindow.width}%`,
           }}
         />
-        {displayed.map((tile) => (
-          <span className="mobile-overview-slot" key={`overview-${tile.id}`}>
-            <TileView
-              tile={tile}
-              usage="hand"
-              className={tile.id === selectedTileId ? 'overview-selected' : ''}
-            />
-          </span>
-        ))}
+        {displayed.map((tile) => {
+          const blockLabel = handBlockSlotLabels.get(tile.id)
+          return (
+            <span className="mobile-overview-slot" key={`overview-${tile.id}`}>
+              <TileView
+                tile={tile}
+                usage="hand"
+                className={tile.id === selectedTileId ? 'overview-selected' : ''}
+              />
+              {!blockGuidesHidden && blockLabel && (
+                <span
+                  className={[
+                    'mobile-tile-block-label',
+                    `mobile-tile-block-label-${blockLabel.kind}`,
+                    `block-group-${blockLabel.groupPosition}`,
+                  ].join(' ')}
+                  data-block-group={blockLabel.groupId}
+                  aria-hidden="true"
+                >
+                  {blockLabel.label}
+                </span>
+              )}
+            </span>
+          )
+        })}
       </div>
       <div
         className={`mobile-block-count-guide block-count-guide block-count-${blockTactic.tone} ${blockGuidesHidden ? 'block-guide-hidden' : ''}`}
@@ -562,7 +578,6 @@ export function HandView({
         >
           <div className="mobile-hand-track">
             {displayed.map((tile) => {
-              const blockLabel = handBlockSlotLabels.get(tile.id)
               const isSelected = tile.id === selectedTileId
               return (
                 <span
@@ -581,19 +596,6 @@ export function HandView({
                     disabled={!canDiscard}
                     onClick={canDiscard ? handleTileClick : undefined}
                   />
-                  {!blockGuidesHidden && blockLabel && (
-                    <span
-                      className={[
-                        'mobile-tile-block-label',
-                        `mobile-tile-block-label-${blockLabel.kind}`,
-                        `block-group-${blockLabel.groupPosition}`,
-                      ].join(' ')}
-                      data-block-group={blockLabel.groupId}
-                      aria-hidden="true"
-                    >
-                      {blockLabel.label}
-                    </span>
-                  )}
                 </span>
               )
             })}
