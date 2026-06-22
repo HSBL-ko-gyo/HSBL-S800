@@ -293,7 +293,6 @@ export function TableView({
             riichiDeclareMode={game.riichiDeclareMode}
             callsDisabled={game.callsDisabled}
             blockGuidesHidden={learningHintsHidden}
-            blockGuidesEnabled={game.players[0].melds.length === 0}
             hint={handHint}
             onDiscard={onDiscard}
             onRon={onRon}
