@@ -80,6 +80,7 @@ export interface DiscardOptionAnalysis {
 
 export type DiscardGrade = 'best' | 'good' | 'compromise' | 'bad'
 export type WhatToDiscardGrade = 'recommended' | 'playable' | 'offPlan'
+export type DefenseWarningLevel = 'none' | 'good' | 'caution' | 'scold'
 
 export interface DiscardEvaluation {
   discard: Tile
@@ -113,6 +114,13 @@ export interface DiscardLog {
   hand: TileCode[]
   drawnTile: TileCode | null
   discardedTile: TileCode
+  bestDiscards: TileCode[]
+  whatToDiscardGrade: WhatToDiscardGrade
+  whatToDiscardLabel: string
+  defenseWarningLevel: DefenseWarningLevel
+  defenseWarning: string | null
+  defenseAlternativeDiscards: TileCode[]
+  attackDefenseGood: string | null
   wallRemaining: number
   shanten: number
   improvementTypeCount: number
@@ -122,6 +130,15 @@ export interface DiscardLog {
   declaredRiichi: boolean
   riichiEstablished: boolean
   explanation: string
+}
+
+interface DefensiveDiscardReview {
+  level: DefenseWarningLevel
+  message: string | null
+  alternativeDiscards: TileCode[]
+  canJudge: boolean
+  selectedDanger: number | null
+  safestDanger: number | null
 }
 
 export interface ScoreYaku {
@@ -1783,6 +1800,127 @@ export function setCallsDisabled(state: GameState, enabled: boolean): GameState 
   })
 }
 
+function hasDiscardedCode(player: PlayerState, code: TileCode): boolean {
+  return player.river.some((record) => record.tile.code === code)
+}
+
+function sujiAnchorCodes(code: TileCode): TileCode[] {
+  if (code.length === 1) return []
+  const number = Number(code[0])
+  const suit = code[1] as 'm' | 'p' | 's'
+  const anchors: number[] = []
+  if (number === 4) anchors.push(1, 7)
+  if (number === 5) anchors.push(2, 8)
+  if (number === 6) anchors.push(3, 9)
+  if (number === 1) anchors.push(4)
+  if (number === 2) anchors.push(5)
+  if (number === 3) anchors.push(6)
+  if (number === 7) anchors.push(4)
+  if (number === 8) anchors.push(5)
+  if (number === 9) anchors.push(6)
+  return anchors.map((anchor) => `${anchor}${suit}` as TileCode)
+}
+
+function tileDangerAgainstOpponent(code: TileCode, opponent: PlayerState, visibleCounts: number[]): number {
+  if (hasDiscardedCode(opponent, code)) return 0
+
+  const visibleCount = visibleCounts[CODE_ORDER.get(code) ?? 0]
+  if (code.length === 1) {
+    if (visibleCount >= 3) return 10
+    if (visibleCount === 2) return 22
+    if (visibleCount === 1) return 42
+    return 72
+  }
+
+  const number = Number(code[0])
+  let danger = number === 1 || number === 9
+    ? 35
+    : number === 2 || number === 8
+      ? 50
+      : number === 3 || number === 7
+        ? 66
+        : 82
+
+  if (sujiAnchorCodes(code).some((anchor) => hasDiscardedCode(opponent, anchor))) {
+    danger -= number >= 4 && number <= 6 ? 28 : 16
+  }
+  if (visibleCount >= 3) danger -= 24
+  if (visibleCount >= 4) danger -= 40
+
+  return Math.max(0, danger)
+}
+
+function defensiveTileDanger(code: TileCode, opponents: PlayerState[], visibleCounts: number[]): number {
+  return Math.max(...opponents.map((opponent) => tileDangerAgainstOpponent(code, opponent, visibleCounts)))
+}
+
+function reviewDefensiveDiscard(
+  stateBefore: GameState,
+  selected: DiscardOptionAnalysis,
+  hand14: Tile[],
+): DefensiveDiscardReview {
+  const humanTurn = stateBefore.discardLogs.length + 1
+  const opponents = stateBefore.players
+    .filter((_, index) => index !== 0)
+    .filter((player) => player.river.length >= 6 || player.isRiichi)
+
+  if (humanTurn < 6 || opponents.length === 0) {
+    return {
+      level: 'none',
+      message: null,
+      alternativeDiscards: [],
+      canJudge: false,
+      selectedDanger: null,
+      safestDanger: null,
+    }
+  }
+
+  const visibleCounts = toCounts([...getVisibleTiles(stateBefore), ...hand14])
+  const uniqueHandTiles = [...new Map(hand14.map((tile) => [tile.code, tile])).values()]
+  const dangers = uniqueHandTiles
+    .map((tile) => ({
+      tile,
+      danger: defensiveTileDanger(tile.code, opponents, visibleCounts),
+    }))
+    .sort((a, b) => a.danger - b.danger || (CODE_ORDER.get(a.tile.code) ?? 0) - (CODE_ORDER.get(b.tile.code) ?? 0))
+
+  const selectedDanger = defensiveTileDanger(selected.discard.code, opponents, visibleCounts)
+  const safestDanger = dangers[0]?.danger ?? selectedDanger
+  const saferOptions = dangers
+    .filter((candidate) => candidate.danger === safestDanger)
+    .map((candidate) => candidate.tile.code)
+  const handIsReadyEnough = selected.shanten <= 0 && selected.improvementTileCount >= 6
+  const dangerGap = selectedDanger - safestDanger
+  const shouldScold = !handIsReadyEnough && selectedDanger >= 76 && safestDanger <= 35 && dangerGap >= 36
+  const shouldCaution = !handIsReadyEnough && selectedDanger >= 64 && safestDanger <= 42 && dangerGap >= 26
+
+  if (!shouldScold && !shouldCaution) {
+    return {
+      level: 'none',
+      message: null,
+      alternativeDiscards: [],
+      canJudge: true,
+      selectedDanger,
+      safestDanger,
+    }
+  }
+
+  const selectedName = tileName(selected.discard.code)
+  const alternativeNames = saferOptions.slice(0, 3).map(tileName).join(' / ')
+  const message = shouldScold
+    ? `それは危ない。${selectedName}は相手の河に通っていない危険牌です。守るなら${alternativeNames}を切って我慢したい局面でした。`
+    : `${selectedName}は少し押しすぎです。安全寄りに打つなら${alternativeNames}を先に見る場面でした。`
+
+  return {
+    level: shouldScold ? 'scold' : 'caution',
+    message,
+    alternativeDiscards: saferOptions,
+    canJudge: true,
+    selectedDanger,
+    safestDanger,
+  }
+}
+
 function appendHumanLog(
   stateBefore: GameState,
   stateAfter: GameState,
@@ -1792,11 +1930,25 @@ function appendHumanLog(
 ): GameState {
   const handBefore = stateBefore.players[0].hand
   const drawnTile = handBefore.find((tile) => tile.id === stateBefore.drawnTileId) ?? null
+  const defensiveReview = reviewDefensiveDiscard(stateBefore, selected, handBefore)
+  const attackDefenseGood = defensiveReview.canJudge
+    && defensiveReview.level === 'none'
+    && (defensiveReview.selectedDanger ?? 99) <= 42
+    && evaluation.whatToDiscardGrade !== 'offPlan'
+      ? `${tileName(selected.discard.code)}は攻めの候補としても守備寄りにも悪くない一打です。`
+      : null
   const log: DiscardLog = {
     turn: stateBefore.discardLogs.length + 1,
     hand: tileCodes(handBefore),
     drawnTile: drawnTile?.code ?? null,
     discardedTile: selected.discard.code,
+    bestDiscards: evaluation.bestDiscards.map((tile) => tile.code),
+    whatToDiscardGrade: evaluation.whatToDiscardGrade,
+    whatToDiscardLabel: evaluation.whatToDiscardLabel,
+    defenseWarningLevel: defensiveReview.level,
+    defenseWarning: defensiveReview.message,
+    defenseAlternativeDiscards: defensiveReview.alternativeDiscards,
+    attackDefenseGood,
     wallRemaining: stateAfter.wall.length,
     shanten: selected.shanten,
     improvementTypeCount: selected.improvementTypeCount,

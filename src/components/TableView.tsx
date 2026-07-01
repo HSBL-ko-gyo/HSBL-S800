@@ -16,6 +16,7 @@ import {
   type Tile,
 } from '../gameEngine'
 import { DiscardHistory } from './DiscardHistory'
+import { DefenseMiniWindow } from './DefenseMiniWindow'
 import { HandView } from './HandView'
 import { LearningPanel } from './LearningPanel'
 import { RiverView } from './RiverView'
@@ -221,6 +222,10 @@ export function TableView({
   const reactionReviewSkipLabel = isRonOnlyReaction ? '見送る' : 'ツモる'
   const reactionReviewHelp = isRonOnlyReaction ? null : '鳴き無しをONにすると、この確認を自動で飛ばせます。'
   const isReactionDialogOpen = game.phase === 'reaction_review' || game.phase === 'declare_reaction'
+  const latestDiscardLog = game.discardLogs.at(-1)
+  const latestDefenseLog = game.status === 'playing' && (latestDiscardLog?.defenseWarning || latestDiscardLog?.attackDefenseGood)
+    ? latestDiscardLog
+    : null
   const statusText = game.status === 'draw'
     ? '流局'
     : game.status === 'win'
@@ -270,7 +275,10 @@ export function TableView({
             })}
 
             <section className="table-center" aria-live="polite">
-              <span className="round-label">東一局</span>
+              <div className="table-center-heading">
+                <span className="round-label">東一局</span>
+                <DefenseMiniWindow log={latestDefenseLog} className="table-center-defense" />
+              </div>
               <strong>{statusText}</strong>
               {game.playerRiichi && <span className="riichi-status">立直</span>}
               <div className="wall-counter">

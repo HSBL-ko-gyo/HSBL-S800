@@ -90,6 +90,14 @@ function stateBeforeEnemyDiscard(humanCodes: TileCode[], discardCode: TileCode, 
   }
 }
 
+function riverFromCodes(codes: TileCode[], actor: PlayerId) {
+  return codes.map((code, index) => ({
+    id: `river-${actor}-${index}`,
+    tile: createTile(code, `river-${actor}-${index}`),
+    actor,
+  }))
+}
+
 describe('riichi learning flow', () => {
   it('recognizes tenpai only after a valid discard', () => {
     const hand = codesToTiles([...tenpaiBase, 'E'])
@@ -704,6 +712,63 @@ describe('discard evaluations', () => {
     expect(result.players[0].river.at(-1)?.tile.id).toBe(selectedTile.id)
     expect(result.lastEvaluation?.discard.id).toBe(selectedTile.id)
     expect(state.players[0].hand.some((tile) => tile.id === result.lastEvaluation?.discard.id)).toBe(true)
+  })
+
+  it('records a defensive warning and shows it in the end-of-round review', () => {
+    const base = gameWithHand(['2m', '3m', '4m', '4p', '5p', '6p', '2s', '3s', '4s', 'E', 'E', '9p', '9s', '5s'])
+    const state: GameState = {
+      ...base,
+      discardLogs: Array.from({ length: 5 }, (_, index) => ({ turn: index + 1 })) as GameState['discardLogs'],
+      players: base.players.map((player, index) => index === 1
+        ? { ...player, river: riverFromCodes(['1m', '9m', '1p', '9p', 'S', 'W'], 1) }
+        : player),
+    }
+    const dangerTile = state.players[0].hand.find((tile) => tile.code === '5s')!
+    const result = discardHumanTile(state, dangerTile.id)
+    const log = result.discardLogs.at(-1)!
+
+    expect(log.defenseWarningLevel).toBe('scold')
+    expect(log.defenseWarning).toContain('それは危ない')
+    expect(log.defenseAlternativeDiscards).toContain('9p')
+    expect(log.bestDiscards.length).toBeGreaterThan(0)
+    expect(new Set(log.defenseAlternativeDiscards).size).toBe(log.defenseAlternativeDiscards.length)
+
+    const playingHtml = renderTable(result)
+    expect(playingHtml).toContain('defense-mini-window')
+    expect(playingHtml).toContain('mini-tile-strip')
+    expect(playingHtml).toContain('今切った')
+    expect(playingHtml).toContain('守るなら')
+    expect(playingHtml).toContain('危険')
+
+    const html = renderTable({
+      ...result,
+      status: 'draw',
+      phase: 'draw',
+      awaitingDiscard: false,
+      discardLogs: [log],
+    })
+    expect(html).toContain('終局メモ')
+    expect(html).toContain('それは危ない')
+    expect(html).toContain('何切るなら')
+    expect(html).toContain('history-tile-row')
+  })
+
+  it('marks a discard as attack-defense good when it is efficient and safe', () => {
+    const base = gameWithHand(['2m', '3m', '4m', '4p', '5p', '6p', '2s', '3s', '4s', 'E', 'E', '9p', '9s', '5s'])
+    const state: GameState = {
+      ...base,
+      discardLogs: Array.from({ length: 5 }, (_, index) => ({ turn: index + 1 })) as GameState['discardLogs'],
+      players: base.players.map((player, index) => index === 1
+        ? { ...player, river: riverFromCodes(['1m', '9m', '1p', '9p', 'S', 'W'], 1) }
+        : player),
+    }
+    const safeTile = state.players[0].hand.find((tile) => tile.code === '9p')!
+    const result = discardHumanTile(state, safeTile.id)
+    const log = result.discardLogs.at(-1)!
+
+    expect(log.attackDefenseGood).toContain('攻めの候補')
+    expect(log.defenseWarning).toBeNull()
+    expect(renderTable(result)).toContain('攻守OK')
   })
 })
 

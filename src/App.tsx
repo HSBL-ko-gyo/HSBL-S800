@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { DefenseMiniWindow } from './components/DefenseMiniWindow'
 import { TableView } from './components/TableView'
 import {
   autoDiscardRiichiDraw,
@@ -24,6 +25,10 @@ function newGame(): GameState {
 
 export default function App() {
   const [game, setGame] = useState<GameState>(newGame)
+  const latestDiscardLog = game.discardLogs.at(-1)
+  const latestDefenseLog = game.status === 'playing' && (latestDiscardLog?.defenseWarning || latestDiscardLog?.attackDefenseGood)
+    ? latestDiscardLog
+    : null
 
   useEffect(() => {
     if (game.status !== 'playing') return
@@ -70,7 +75,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <header className="app-header">
+      <header className={`app-header ${latestDefenseLog ? 'has-defense' : ''}`}>
         <div>
           <p className="eyebrow">SOLO SPEED MAHJONG</p>
           <div className="title-row">
@@ -81,9 +86,12 @@ export default function App() {
             >
               <h1>爆速麻雀</h1>
             </a>
-            <div className="mobile-round-summary" aria-label={`東一局 山残り${game.wall.length}枚`}>
-              <b>東一局</b>
-              <span>山 {game.wall.length}枚</span>
+            <div className="mobile-header-widgets">
+              <DefenseMiniWindow log={latestDefenseLog} className="mobile-summary-defense" />
+              <div className="mobile-round-summary" aria-label={`東一局 山残り${game.wall.length}枚`}>
+                <b>東一局</b>
+                <span>山 {game.wall.length}枚</span>
+              </div>
             </div>
           </div>
           <p className="subtitle">待つのは、自分の番だけ。</p>
